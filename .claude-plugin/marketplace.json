@@ -13,7 +13,7 @@
       "name": "write-a-skill",
       "source": "./plugins/write-a-skill",
       "description": "创建符合规范的用户技能，包含完整结构、渐进式信息展示和配套资源。",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     {
       "name": "quick-commit",
