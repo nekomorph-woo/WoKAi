@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "DDAi 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "plugins": [
     {
@@ -103,6 +103,12 @@
       "name": "analyse-to-rule",
       "source": "./plugins/analyse-to-rule",
       "description": "分析近7日会话日志，提取编码习惯、工程实践和沟通偏好，自动生成用户级和项目级 rules 文件。Use when 用户要求生成规则、分析习惯、提取洞见、或提到 \"insights\" / \"洞见\" / \"规则生成\" / \"analyse-to-rule\"。",
+      "version": "0.1.0"
+    },
+    {
+      "name": "prd-to-modules",
+      "source": "./plugins/prd-to-modules",
+      "description": "将大 PRD 纵向拆分为自闭环的功能模块，设计模块间依赖关系和对内对外接口，最终为每个模块生成执行计划。Use when 用户要求拆分 PRD 为模块、设计模块接口、规划模块依赖、或提到 \"模块拆分\" / \"模块设计\" / \"prd-to-modules\"。",
       "version": "0.1.0"
     }
   ]
