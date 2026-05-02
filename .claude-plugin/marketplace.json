@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "DDAi 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   "plugins": [
     {
