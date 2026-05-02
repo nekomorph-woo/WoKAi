@@ -26,10 +26,10 @@ plans/modules/
 ## 流程总览
 
 ```
-SOP1 → ✅ 确认 → SOP2 → ✅ 确认 → SOP3 → SOP4 → ✅ 确认 → SOP5 → ✅ 确认
+SOP1 → ✅ 确认 → SOP2 → ✅ 确认 → SOP3 → ✅ 确认 → SOP4 → ✅ 确认 → SOP5 → ✅ 确认
 ```
 
-SOP3 不需要用户确认（自动化执行）。SOP4 完成后设计锁定。
+SOP4 完成后设计锁定。
 
 ## 流程
 
@@ -53,6 +53,8 @@ SOP3 不需要用户确认（自动化执行）。SOP4 完成后设计锁定。
 6. 同时 spawn 最多 3 个 general-purpose subagent 并行设计
 7. 每个模块输出 `plans/modules/<name>/design.md`
 
+**模块数量较多时**（7+）：先评估是否有可合并的相似模块以减少总数，降低串行轮次耗时。
+
 详见 [reference/sop2-design.md](reference/sop2-design.md)。
 
 **→ 向用户展示各模块设计摘要，确认后进入 SOP3。**
@@ -64,6 +66,8 @@ SOP3 不需要用户确认（自动化执行）。SOP4 完成后设计锁定。
 3. 更新各模块 design.md，引用公共产物而非重复定义
 
 由主流程执行（需要全局视野）。详见 [reference/sop3-cross-analysis.md](reference/sop3-cross-analysis.md)。
+
+**→ 向用户展示提取的公共产物列表（新增模块、公共模型、公共方法），确认后进入 SOP4。**
 
 ### SOP4: 审查与修正
 
@@ -102,6 +106,12 @@ SOP3 不需要用户确认（自动化执行）。SOP4 完成后设计锁定。
 详见 [reference/agent-teams.md](reference/agent-teams.md)。
 
 **→ 向用户展示所有模块执行计划总览，确认后完成。**
+
+## 异常处理
+
+- 每个 subagent 设 **20 分钟超时**，超时后重试 1 次
+- 连续失败则跳过该模块，在 SOP4 审查中标记为需人工介入
+- SOP 间失败（如 SOP2 某 subagent 超时）不阻塞后续 SOP，已完成的模块正常流转
 
 ## 关键原则
 

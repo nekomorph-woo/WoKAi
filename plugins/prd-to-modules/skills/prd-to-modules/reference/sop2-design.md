@@ -43,6 +43,8 @@
 6. 使用模板格式输出到 plans/modules/<name>/design.md
 ```
 
+设计原则和低耦合要求已在 design.md 模板中固化，subagent 遵循模板即可。
+
 ## design.md 模板
 
 详见 [template-design.md](template-design.md)。
