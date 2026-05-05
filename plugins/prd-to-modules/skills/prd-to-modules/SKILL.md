@@ -26,7 +26,7 @@ plans/modules/
 ## 流程总览
 
 ```
-SOP1 → ✅ 确认 → SOP2 → ✅ 确认 → SOP3 → ✅ 确认 → SOP4 → ✅ 确认 → SOP5 → ✅ 确认
+SOP1 → ✅ 确认 → SOP2 → ✅ 确认 → SOP3 → SOP4 → ✅ 确认 → SOP5 → ✅ 确认
 ```
 
 SOP4 完成后设计锁定。
@@ -67,7 +67,7 @@ SOP4 完成后设计锁定。
 
 由主流程执行（需要全局视野）。详见 [reference/sop3-cross-analysis.md](reference/sop3-cross-analysis.md)。
 
-**→ 向用户展示提取的公共产物列表（新增模块、公共模型、公共方法），确认后进入 SOP4。**
+**→ 直接进入 SOP4 审查与修正，不中断用户。**
 
 ### SOP4: 审查与修正
 
@@ -77,7 +77,7 @@ SOP4 完成后设计锁定。
 
 由主流程执行。详见 [reference/sop4-review.md](reference/sop4-review.md)。
 
-**→ 向用户展示修正内容，确认后设计锁定，进入 SOP5。**
+**→ 向用户展示 SOP3 提取结果 + SOP4 修正内容汇总，确认后设计锁定，进入 SOP5。**
 
 ### SOP5: Agent Teams 计划生成
 

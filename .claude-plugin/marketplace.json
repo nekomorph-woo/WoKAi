@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "DDAi 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
-    "version": "0.7.0"
+    "version": "0.8.0"
   },
   "plugins": [
     {
@@ -109,7 +109,7 @@
       "name": "prd-to-modules",
       "source": "./plugins/prd-to-modules",
       "description": "将大 PRD 纵向拆分为自闭环的功能模块，设计模块间依赖关系和对内对外接口，最终为每个模块生成执行计划。Use when 用户要求拆分 PRD 为模块、设计模块接口、规划模块依赖、或提到 \"模块拆分\" / \"模块设计\" / \"prd-to-modules\"。",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     {
       "name": "resolve-finding",
