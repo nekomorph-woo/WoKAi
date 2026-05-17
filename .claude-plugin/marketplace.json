@@ -46,30 +46,6 @@
       "version": "0.1.0"
     },
     {
-      "name": "request-refactor-plan",
-      "source": "./plugins/request-refactor-plan",
-      "description": "通过用户访谈创建详细重构计划，拆分为安全增量提交，提交为 issue。Use when 用户要求规划重构、创建重构 RFC、或将重构拆分为安全增量步骤。",
-      "version": "0.1.0"
-    },
-    {
-      "name": "improve-codebase-architecture",
-      "source": "./plugins/improve-codebase-architecture",
-      "description": "探索代码库发现架构改进机会，聚焦加深浅模块提升可测试性。Use when 用户要求改进架构、发现重构机会、整合紧耦合模块、或提高代码可测试性。",
-      "version": "0.1.0"
-    },
-    {
-      "name": "edit-article",
-      "source": "./plugins/edit-article",
-      "description": "按章节重组文章、提升清晰度、精简措辞。Use when 用户要求编辑文章、修订草稿、优化文案、或改进文档结构。",
-      "version": "0.1.0"
-    },
-    {
-      "name": "ubiquitous-language",
-      "source": "./plugins/ubiquitous-language",
-      "description": "从对话中提取领域术语，构建一致性词汇表，标记歧义并提议权威术语。Use when 用户要求定义术语、统一词汇、构建词汇表、或提到\"统一语言\"/\"ubiquitous language\"/\"领域术语\"。",
-      "version": "0.1.0"
-    },
-    {
       "name": "improve-rule",
       "source": "./plugins/improve-rule",
       "description": "管理 .claude/rules/ 配置文件：初始化模板、五维度评估规则质量、改进规则、审计规则间冲突。Use when 用户要求初始化规则、评估规则、改进规则、审计规则，或提到 \"rules\" / \"对话风格\" / \"improve-rule\"。",
