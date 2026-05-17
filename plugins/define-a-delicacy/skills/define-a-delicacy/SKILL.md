@@ -17,7 +17,7 @@ pipeline:
 
 1. 询问用户要构建什么
 2. 通过访谈明确问题、目标、范围
-3. 生成 `plans/<feature-name>/_define.md`
+3. 生成 `plans/<system-name>/<phase-name>/_define.md`
 
 ## 工作流程
 
@@ -56,7 +56,7 @@ pipeline:
 
 ### 3. 生成文档
 
-产出 `plans/<feature-name>/_define.md`：
+产出 `plans/<system-name>/<phase-name>/_define.md`：
 
 ```markdown
 ---

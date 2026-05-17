@@ -3,7 +3,7 @@
 ## 目录结构
 
 ```
-plans/<feature-name>/
+plans/<system-name>/<phase-name>/
 ├── _define.md                    ← 上游产出
 └── modules/
     ├── _registry.md              ← 模块注册表 + 持久架构决策

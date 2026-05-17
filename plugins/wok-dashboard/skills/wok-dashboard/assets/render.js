@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  const FEATURE_NAME = '{{FEATURE_NAME}}';
-  const STORAGE_KEY = 'wok-notes-' + FEATURE_NAME;
+  const SYSTEM_NAME = '{{SYSTEM_NAME}}';
+  const STORAGE_KEY = 'wok-notes-' + SYSTEM_NAME;
 
   // ── State ──
   const state = {
@@ -74,7 +74,16 @@
   async function readDirectoryHandle(dirHandle) {
     const files = [];
     for await (const entry of dirHandle.values()) {
-      if (entry.kind === 'file' && entry.name.endsWith('.md')) {
+      if (entry.kind === 'directory') {
+        // Recurse into phase subdirectories (e.g. p1-xxx/)
+        for await (const sub of entry.values()) {
+          if (sub.kind === 'file' && sub.name.endsWith('.md')) {
+            const file = await sub.getFile();
+            files.push(file);
+          }
+        }
+      } else if (entry.kind === 'file' && entry.name.endsWith('.md')) {
+        // System-level files (e.g. _roadmap.md)
         const file = await entry.getFile();
         files.push(file);
       }
@@ -86,8 +95,10 @@
     const files = Array.from(fileList).filter(f => f.name.endsWith('.md'));
     for (const file of files) {
       const text = await file.text();
-      state.files.set(file.name, text);
-      state.parsed.set(file.name, parseMarkdown(text, file.name));
+      // Use relative path from webkitRelativePath as key (includes phase dir)
+      const key = file.webkitRelativePath || file.name;
+      state.files.set(key, text);
+      state.parsed.set(key, parseMarkdown(text, key));
     }
     onFilesLoaded();
   }
@@ -146,6 +157,29 @@
     renderTab(tabName);
   }
 
+  // Find file by suffix (e.g. '_define.md' matches 'p1-xxx/_define.md')
+  function findFile(suffix) {
+    for (const [key] of state.parsed) {
+      if (key.endsWith('/' + suffix) || key === suffix) return key;
+    }
+    return null;
+  }
+
+  // Find all files matching suffix across phases
+  function findAllFiles(suffix) {
+    const results = [];
+    for (const [key] of state.parsed) {
+      if (key.endsWith('/' + suffix) || key === suffix) results.push(key);
+    }
+    return results;
+  }
+
+  // Extract phase name from key (e.g. 'p1-xxx/_define.md' → 'p1-xxx')
+  function extractPhase(key) {
+    const parts = key.split('/');
+    return parts.length > 1 ? parts[0] : null;
+  }
+
   function onFilesLoaded() {
     welcome.style.display = 'none';
     renderTab(state.activeTab);
@@ -166,21 +200,29 @@
     const el = $('#tab-overview');
     let html = '';
 
-    // Pipeline progress
-    const pipelineSteps = [
-      { name: 'define', file: '_define.md' },
-      { name: 'registry', file: 'modules/_registry.md' },
-      { name: 'check', file: '_check.md' },
-      { name: 'plan', file: '_plan.md' },
+    // Pipeline progress (aggregate across all phases)
+    const phaseKeys = new Set();
+    for (const [key] of state.parsed) {
+      const phase = extractPhase(key);
+      if (phase) phaseKeys.add(phase);
+    }
+
+    const pipelineFiles = [
+      { name: 'define', suffix: '_define.md' },
+      { name: 'registry', suffix: 'modules/_registry.md' },
+      { name: 'check', suffix: '_check.md' },
+      { name: 'plan', suffix: '_plan.md' },
     ];
-    const approvedCount = pipelineSteps.filter(s => {
-      const p = state.parsed.get(s.file);
+    const approvedCount = pipelineFiles.filter(s => {
+      const key = findFile(s.suffix);
+      const p = key ? state.parsed.get(key) : null;
       return p && p.frontmatter && p.frontmatter.status === 'approved';
     }).length;
 
     html += '<div class="overview-section"><h2>Pipeline 进度</h2><div class="pipeline-progress">';
-    pipelineSteps.forEach((s, i) => {
-      const p = state.parsed.get(s.file);
+    pipelineFiles.forEach((s, i) => {
+      const key = findFile(s.suffix);
+      const p = key ? state.parsed.get(key) : null;
       const done = p && p.frontmatter && p.frontmatter.status === 'approved';
       const current = !done && p && (p.frontmatter && p.frontmatter.status !== 'approved');
       html += `<div class="pipeline-step${done ? ' done' : ''}${current && i === approvedCount ? ' current' : ''}" title="${s.name}"></div>`;
@@ -228,9 +270,9 @@
     el.querySelectorAll('.brief-item').forEach(item => {
       item.addEventListener('click', () => {
         const file = item.dataset.file;
-        if (file.startsWith('modules/')) switchTab('design');
-        else if (file === '_check.md') switchTab('check');
-        else if (file === '_plan.md') switchTab('execution');
+        if (file.includes('/modules/')) switchTab('design');
+        else if (file.endsWith('/_check.md')) switchTab('check');
+        else if (file.endsWith('/_plan.md')) switchTab('execution');
         else switchTab('requirements');
       });
     });
@@ -247,27 +289,28 @@
   function renderRequirements() {
     const el = $('#tab-requirements');
     let html = '';
-    const define = state.parsed.get('_define.md');
-    const roadmap = state.parsed.get('_roadmap.md');
-    if (define) html += renderMd(define.body, '_define.md');
-    if (roadmap) html += '<hr>' + renderMd(roadmap.body, '_roadmap.md');
-    if (!define && !roadmap) html = '<p style="color:#737373;">未找到需求文档（_define.md / _roadmap.md）</p>';
+    const roadmapKey = findFile('_roadmap.md');
+    const defineKey = findFile('_define.md');
+    if (defineKey) html += renderMd(state.parsed.get(defineKey).body, defineKey);
+    if (roadmapKey) html += '<hr>' + renderMd(state.parsed.get(roadmapKey).body, roadmapKey);
+    if (!defineKey && !roadmapKey) html = '<p style="color:#737373;">未找到需求文档（_define.md / _roadmap.md）</p>';
     el.innerHTML = html;
   }
 
   // ── Design Tab ──
   function renderDesign() {
     const el = $('#tab-design');
-    const registry = state.parsed.get('modules/_registry.md');
-    if (!registry) {
+    const registryKey = findFile('modules/_registry.md');
+    if (!registryKey) {
       el.innerHTML = '<p style="color:#737373;">未找到模块注册表（modules/_registry.md）</p>';
       return;
     }
+    const registry = state.parsed.get(registryKey);
 
     // Extract module names from parsed files
     const modules = [];
     for (const name of state.files.keys()) {
-      const m = name.match(/^modules\/([^/]+)\/design\.md$/);
+      const m = name.match(/\/modules\/([^/]+)\/design\.md$/);
       if (m && m[1] !== '_shared') modules.push(m[1]);
     }
 
@@ -287,13 +330,13 @@
 
     html += '<div class="module-detail">';
     if (!state.activeModule) {
-      html += renderMd(registry.body, 'modules/_registry.md');
+      html += renderMd(registry.body, registryKey);
     } else {
-      const design = state.parsed.get(`modules/${state.activeModule}/design.md`);
-      const decisions = state.parsed.get(`modules/${state.activeModule}/decisions.md`);
-      if (design) html += renderMd(design.body, `modules/${state.activeModule}/design.md`);
-      if (decisions) html += '<hr>' + renderMd(decisions.body, `modules/${state.activeModule}/decisions.md`);
-      if (!design && !decisions) html = '<p style="color:#737373;">未找到该模块的设计文档</p>';
+      const designKey = findFile(`modules/${state.activeModule}/design.md`);
+      const decisionsKey = findFile(`modules/${state.activeModule}/decisions.md`);
+      if (designKey) html += renderMd(state.parsed.get(designKey).body, designKey);
+      if (decisionsKey) html += '<hr>' + renderMd(state.parsed.get(decisionsKey).body, decisionsKey);
+      if (!designKey && !decisionsKey) html = '<p style="color:#737373;">未找到该模块的设计文档</p>';
     }
     html += '</div></div>';
 
@@ -311,11 +354,12 @@
   // ── Check Tab ──
   function renderCheck() {
     const el = $('#tab-check');
-    const check = state.parsed.get('_check.md');
-    if (!check) {
+    const checkKey = findFile('_check.md');
+    if (!checkKey) {
       el.innerHTML = '<p style="color:#737373;">未找到校验文档（_check.md）</p>';
       return;
     }
+    const check = state.parsed.get(checkKey);
 
     let html = '<div class="severity-filters">';
     html += '<button class="severity-btn active" data-severity="all">全部</button>';
@@ -323,7 +367,7 @@
     html += '<button class="severity-btn" data-severity="yellow">建议</button>';
     html += '<button class="severity-btn" data-severity="green">通过</button>';
     html += '</div>';
-    html += '<div class="check-content">' + renderMd(check.body, '_check.md') + '</div>';
+    html += '<div class="check-content">' + renderMd(check.body, checkKey) + '</div>';
 
     el.innerHTML = html;
 
@@ -353,11 +397,12 @@
   // ── Execution Tab ──
   function renderExecution() {
     const el = $('#tab-execution');
-    const plan = state.parsed.get('_plan.md');
-    if (!plan) {
+    const planKey = findFile('_plan.md');
+    if (!planKey) {
       el.innerHTML = '<p style="color:#737373;">未找到执行计划（_plan.md）</p>';
       return;
     }
+    const plan = state.parsed.get(planKey);
 
     const steps = extractSteps(plan.body);
     const doneCount = steps.filter(s => s.done).length;
@@ -390,7 +435,7 @@
     html += '<button class="btn-sm refresh-btn" id="exec-refresh-btn">刷新</button>';
 
     // Render markdown body
-    html += '<div class="plan-content">' + renderMd(plan.body, '_plan.md') + '</div>';
+    html += '<div class="plan-content">' + renderMd(plan.body, planKey) + '</div>';
 
     el.innerHTML = html;
 

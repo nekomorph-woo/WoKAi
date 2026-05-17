@@ -40,7 +40,7 @@ pipeline:
 - 技术栈和现有架构约束？
 - 想要探索的方向或解决的问题？
 
-**读取上游**（可选）：检查 `plans/<feature-name>/` 下是否已有产出物，了解已有设计存量。
+**读取上游**（可选）：检查 `plans/<system-name>/` 下是否已有产出物（`_roadmap.md` 或 phase 子目录），了解已有设计存量。
 
 ### 2. 双轨探索
 
@@ -128,7 +128,16 @@ pipeline:
 
 ### 6. 产出路线图
 
-产出 `plans/<feature-name>/_roadmap.md`：
+产出 `plans/<system-name>/_roadmap.md`：
+
+目录结构：
+
+```
+plans/<system-name>/
+├── _roadmap.md                    ← 本文件
+├── p1-<phase-name>/              ← 后续各 phase 管道循环在此创建
+└── p2-<phase-name>/
+```
 
 ```markdown
 ---
@@ -160,14 +169,14 @@ changed: 初始版本
 
 ## 路线图
 
-### Phase 1 — <主题>
+### p1-<phase-name> — <主题>
 
 目标：<端到端能力描述>
 模块预估：<N> 个
 
 ...
 
-### Phase 2 — <主题>
+### p2-<phase-name> — <主题>
 ...
 ```
 
@@ -181,7 +190,7 @@ changed: 初始版本
 **产出**：<项目> 功能路线图，<N> 个 phase，<M> 个精选 feature
 **决策**：<关键分组决策>
 **阻塞**：无
-**下一步**：确认后对 Phase 1 执行 /define-a-delicacy，后续 phase 依次迭代
+**下一步**：确认后创建 `plans/<system-name>/p1-<phase-name>/` 目录，对 Phase 1 执行 /define-a-delicacy
 ```
 
 ## 迭代使用

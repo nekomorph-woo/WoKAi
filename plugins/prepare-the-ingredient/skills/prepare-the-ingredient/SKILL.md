@@ -25,12 +25,21 @@ pipeline:
 
 ### 1. 读取上游（可选）
 
-检查 `plans/<feature-name>/_define.md` 是否存在：
+检查 `plans/<system-name>/<phase-name>/_define.md` 是否存在：
 
 - **存在**：读取 frontmatter，提取设计锚点、用户故事、验收标准作为设计输入
 - **不存在**：从当前对话上下文和代码库探索中获取必要信息，正常执行
 
 根据设计存量判断产出深度（全量 / 增量）。
+
+**跨 phase 设计感知**：检查 `plans/<system-name>/_roadmap.md` 是否存在，读取同批次兄弟 phase 的模块设计：
+
+1. 从 `_roadmap.md` 提取当前 phase 之前的兄弟 phase 目录列表
+2. 读取兄弟 phase 的 `modules/_registry.md` 和关键模块的 `design.md`
+3. 评估接口兼容性：当前 phase 的模块是否需要扩展/修改兄弟 phase 的接口
+4. 如需修改：更新兄弟 phase 的 `design.md`，在当前 phase 的 `decisions.md` 中记录原因
+
+**仅在同批次 phase（同一个 `_roadmap.md`）中跨 phase 修改设计文档。** 独立迭代（无 `_roadmap.md`）以代码库为准，不改历史文档。
 
 ### 2. 模块识别
 
@@ -40,7 +49,7 @@ pipeline:
 - 追求 **deep module**：接口简单，实现复杂度隐藏在内部
 - 每个模块 **自闭环**：独立可测试、可交付（垂直切片）
 - 模块之间单向依赖，无循环
-- 产出模块注册表 `plans/<feature-name>/modules/_registry.md`
+- 产出模块注册表 `plans/<system-name>/<phase-name>/modules/_registry.md`
 
 ### 3. 验证门：模块边界
 
@@ -59,8 +68,8 @@ pipeline:
 
 - `/plate-the-dish` 生成 3+ 个差异显著的接口设计方案
 - 用户选择最优方案
-- 产出 `plans/<feature-name>/modules/<name>/design.md`（intent: reference）— 接口契约
-- 产出 `plans/<feature-name>/modules/<name>/decisions.md`（intent: explanation）— 设计决策
+- 产出 `plans/<system-name>/<phase-name>/modules/<name>/design.md`（intent: reference）— 接口契约
+- 产出 `plans/<system-name>/<phase-name>/modules/<name>/decisions.md`（intent: explanation）— 设计决策
 
 ### 5. 验证门：模板深度
 
@@ -78,7 +87,7 @@ pipeline:
 
 扫描全部模块设计文档，识别跨模块重复定义的数据模型、工具方法、共享类型：
 
-- 提取到 `plans/<feature-name>/modules/_shared/` 目录
+- 提取到 `plans/<system-name>/<phase-name>/modules/_shared/` 目录
 - 更新各模块 design.md 中的引用，指向共享定义而非重复副本
 - 判断标准：2+ 个模块使用相同的类型/方法/常量则提取
 
