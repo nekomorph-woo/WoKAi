@@ -1,24 +1,17 @@
 ---
 name: triage-issue
 description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 "triage" / "排查" / "诊断"。
+pipeline:
+  upstream: []
+  downstream: [tdd]
+  gate: false
+  output: none
+  adaptive: false
 ---
 
 # Triage Issue
 
-调查问题根因，创建包含 TDD 修复计划的 issue。支持 GitHub 和 GitLab。
-
-## 平台判断（流程开始时执行）
-
-**ALWAYS** 在任何涉及 issue 的操作前，先判断代码托管平台。
-
-执行 `git remote get-url origin` 获取远程 URL：
-
-| 平台 | 判断条件 | CLI |
-|------|----------|-----|
-| GitHub | URL 包含 `github.com` | `gh` |
-| GitLab | URL 包含 `gitlab.com` 或私有域名 | `glab` |
-
-后续所有 CLI 命令使用判断得到的 CLI 工具。
+调查问题根因，创建包含 TDD 修复计划的 issue。
 
 ## 执行流程
 
@@ -96,7 +89,19 @@ description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when
 
 **耐久性**：描述行为和契约，而非内部结构。测试断言可观察结果（API 响应、UI 状态），而非内部状态。
 
-### 5. 创建 Issue
+### 5. 评估修复范围
+
+判断修复规模，决定后续路径：
+
+| 条件 | 判断 | 后续路径 |
+|------|------|----------|
+| 修复 ≤ 3 个文件，无架构变更 | 简单修复 | 直接创建 Issue，后续 `/tdd` |
+| 修复 > 3 个文件，或涉及模块边界 | 需要设计 | 创建 Issue 后建议用户走 `define-a-delicacy` → `prepare-the-ingredient` → `write-a-recipe` → `/tdd` |
+| 根因指向架构缺陷 | 需要重构 | 创建 Issue 后建议用户先走 `/request-refactor-plan` |
+
+简单修复路径直接进入步骤 6。需要设计的路径创建 Issue 时在 Issue 体中标注。
+
+### 6. 创建 Issue
 
 使用已判断的 CLI 创建 issue：
 
@@ -108,6 +113,11 @@ description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when
 ## Issue 模板
 
 ```markdown
+## 修复范围
+
+> ⚠️ 需要设计 / 简单修复
+> （需要设计时标注建议的管道路径）
+
 ## 问题
 
 描述 bug 或 issue：
