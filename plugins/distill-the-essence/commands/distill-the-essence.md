@@ -9,7 +9,7 @@ description: 分析近7日跨项目会话日志，提取编码习惯、工程实
 
 1. 使用 Bash 执行：
    ```bash
-   ls ~/.claude/plugins/cache/ddai/distill-the-essence/*/skills/distill-the-essence/SKILL.md
+   ls ~/.claude/plugins/cache/wok/distill-the-essence/*/skills/distill-the-essence/SKILL.md
    ```
 
 2. 使用 Read 工具读取输出的路径

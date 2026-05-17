@@ -1,332 +1,95 @@
-# DDAi - AI 辅助开发的技能市场
+# wok
 
-**DDAi**（DD's AI Assistant）是一套为 Claude Code 设计的技能插件集合，旨在将 AI 从"代码生成工具"升级为"全流程开发伙伴"。
+为 Claude Code 设计的技能插件市场。把软件开发当作烹饪——从觅食到出餐，每一步都有对应的工具。
 
-## 核心理念
-
-### 问题
-
-AI 编程助手擅长生成代码片段，但在以下方面存在短板：
-
-- **缺乏上下文**：不理解项目历史、架构决策、团队约定
-- **流程断裂**：需求 → 设计 → 开发 → 测试 各环节孤立
-- **随意性强**：输出质量高度依赖 prompt 质量，缺乏一致性
-
-### 解决方案
-
-DDAi 通过**技能插件化**解决上述问题：
+## 烹饪管道
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Claude Code                          │
-├─────────────────────────────────────────────────────────┤
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐    │
-│  │ 需求    │  │ 设计    │  │ 开发    │  │ 质量    │    │
-│  │ Skills  │→ │ Skills  │→ │ Skills  │→ │ Skills  │    │
-│  └─────────┘  └─────────┘  └─────────┘  └─────────┘    │
-│       ↓            ↓            ↓            ↓         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │              统一的对话风格 & 规范               │   │
-│  └─────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-```
-
-### 设计原则
-
-| 原则 | 说明 |
-|------|------|
-| **渐进式信息** | SKILL.md 精简，reference/ 深入，examples/ 示范 |
-| **确定性优先** | 可脚本化的操作用脚本，避免重复生成 |
-| **流程衔接** | 插件间可组合，形成完整工作流 |
-| **规范统一** | 命令式语气、第三人称、精准措辞 |
-
----
-
-## 技能概览
-
-按软件开发生命周期组织。标记 🤖 的技能使用 **Sub-Agent** 并行处理或深度探索。
-
-### Sub-Agent 使用说明
-
-| 模式 | 技能 | 为什么使用 Sub-Agent |
-|------|------|----------------------|
-| **并行生成** | design-an-interface | 同时产出多个差异显著的设计方案，避免单一视角局限 |
-| **代码库探索** | write-a-prd | 验证用户断言、理解现有架构，避免 PRD 与实际脱节 |
-| **代码库探索** | improve-codebase-architecture | 自然探索发现摩擦点，而非按固定清单检查 |
-| **代码库探索** | triage-issue | 深入调查定位问题根因，而非表面猜测 |
-
-### 需求阶段
-
-| 技能 | 目标 | 使用场景 |
-|------|------|----------|
-| **office-hours** | 需求价值诊断 | 评估想法是否值得做、在写代码前深度思考产品方向 |
-| **write-a-prd** 🤖 | 创建产品需求文档 | 规划新功能、编写 PRD、创建需求文档 |
-
-### 设计阶段
-
-| 技能 | 目标 | 使用场景 |
-|------|------|----------|
-| **prd-to-plan** | PRD 转实现计划 | 将需求文档拆分为多阶段实施计划 |
-| **prd-to-issues** | PRD 转可认领 issue | 将需求拆分为独立工作项，分配给团队成员 |
-| **design-an-interface** 🤖 | 接口方案设计 | 探索 API 设计选项、对比不同模块形态 |
-| **grill-me** | 计划压力测试 | 审视计划漏洞、系统性追问直至共识 |
-| **ubiquitous-language** | 统一领域语言 | 消除术语歧义、构建团队词汇表 |
-| **improve-codebase-architecture** 🤖 | 架构改进分析 | 发现重构机会、提升代码可测试性 |
-| **request-refactor-plan** | 重构计划制定 | 将重构拆分为安全增量步骤 |
-
-### 开发阶段
-
-| 技能 | 目标 | 使用场景 |
-|------|------|----------|
-| **tdd** | 测试驱动开发 | 使用 RED-GREEN-REFACTOR 循环开发功能 |
-| **quick-commit** | 规范化提交 | 生成标准 commit message，关联 issue |
-
-### 质量保证
-
-| 技能 | 目标 | 使用场景 |
-|------|------|----------|
-| **triage-issue** 🤖 | 问题根因分析 | 报告 bug、创建带修复计划的 issue |
-
-### 工具 & 辅助
-
-| 技能 | 目标 | 使用场景 |
-|------|------|----------|
-| **write-a-skill** | 创建新技能 | 开发个人技能或 DDAi 插件 |
-| **edit-article** | 文章编辑优化 | 重组章节、精简措辞、优化文档结构 |
-| **improve-rule** | Rules 管理 | 初始化规则模板、五维度评估、改进规则、审计冲突 |
-
----
-
-## 组合工作流
-
-### 工作流 1：新功能完整流程
-
-```
-用户想法
-    │
-    ▼
-┌─────────────┐
-│ office-hours│  验证需求价值
-└──────┬──────┘
-       │ 值得做
-       ▼
-┌─────────────┐
-│write-a-prd  │  创建需求文档
-└──────┬──────┘
+forage-the-market   觅食：发散灵感 + 规划路线图
        │
-       ▼
-┌─────────────┐
-│ prd-to-plan │  拆分实施计划
-└──────┬──────┘
+pick-the-finding    挑拣：探索代码现状
        │
-       ▼
-┌──────────────────┐
-│design-an-interface│  设计接口方案
-└──────┬───────────┘
+define-a-delicacy   定菜：定义做什么
        │
-       ▼
-┌─────────────┐
-│   grill-me  │  压力测试计划
-└──────┬──────┘
-       │ 通过
-       ▼
-┌─────────────┐
-│prd-to-issues│  创建可认领 issue
-└──────┬──────┘
+prepare-the-ingredient   备料：拆模块 + 设计接口
        │
-       ▼
-┌─────────────┐
-│     tdd     │  测试驱动开发
-└──────┬──────┘
+season-the-dish      调味：交叉验证一致性
        │
-       ▼
-┌─────────────┐
-│quick-commit │  规范化提交
-└─────────────┘
-```
-
-### 工作流 2：Bug 修复流程
-
-```
-Bug 报告
-    │
-    ▼
-┌─────────────┐
-│triage-issue │  分析根因，创建修复计划
-└──────┬──────┘
+write-a-recipe       写谱：翻译为编码步骤
        │
-       ▼
-┌─────────────┐
-│     tdd     │  TDD 方式修复
-└──────┬──────┘
+cook-by-recipe       烹饪：TDD 驱动开发
        │
-       ▼
-┌─────────────┐
-│quick-commit │  提交并关联 issue
-└─────────────┘
-       │
-       ▼
-  Issue 自动关闭
+ooops-up             出餐：规范化提交
 ```
 
-### 工作流 3：架构改进流程
+每个技能可独立使用，不需要走完整管道。
+
+## 插件一览
+
+### 管道技能
+
+| 技能 | 做什么 |
+|------|--------|
+| `forage-the-market` | 发散功能想法，设计版本化路线图 |
+| `pick-the-finding` | 探索现有代码的设计约束与架构模式 |
+| `define-a-delicacy` | 定义 What：问题、目标、设计锚点、验收标准 |
+| `prepare-the-ingredient` | 拆模块、设计接口、记录设计决策 |
+| `season-the-dish` | 交叉验证模块设计的一致性和完整性 |
+| `write-a-recipe` | 将模块设计翻译为编码执行计划 |
+| `cook-by-recipe` | TDD 驱动开发（RED-GREEN-REFACTOR） |
+| `ooops-up` | 规范化 commit message，关联 issue |
+
+### 辅助技能
+
+| 技能 | 做什么 |
+|------|--------|
+| `grill-me` | 对计划/设计进行系统性追问和压力测试 |
+| `plate-the-dish` | 生成多个差异显著的模块接口设计方案 |
+| `diagnose-the-symptom` | 调查问题根因，创建带 TDD 修复计划的 issue |
+| `refine-the-technique` | 管理 rules 配置：评估、改进、审计 |
+| `distill-the-essence` | 分析会话日志，提取编码习惯生成 rules |
+| `seal-the-pantry` | 管理文件排除规则，保护敏感文件 |
+| `write-a-skill` | 创建符合规范的新技能 |
+
+## 安装
+
+添加 marketplace：
 
 ```
-代码腐化信号
-    │
-    ▼
-┌───────────────────────────┐
-│improve-codebase-architecture│  发现改进机会
-└───────────┬───────────────┘
-            │
-            ▼
-┌────────────────────┐
-│request-refactor-plan│  制定重构计划
-└─────────┬──────────┘
-          │
-          ▼
-┌─────────────┐
-│   grill-me  │  验证重构方案
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│prd-to-issues│  拆分为安全增量 issue
-└──────┬──────┘
-       │
-       ▼
-   逐步重构
+/plugin marketplace add nekomorph-woo/wok
 ```
 
-### 工作流 4：快速迭代（跳过设计）
+安装插件：
 
 ```
-明确的小需求
-    │
-    ▼
-┌─────────────┐
-│     tdd     │  直接 TDD 开发
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│quick-commit │  快速提交
-└─────────────┘
+/plugin install <plugin-name>@wok
 ```
 
----
-
-## 快速开始
-
-### 安装 Marketplace
-
-在 Claude Code 中添加 DDAi marketplace：
+更新：
 
 ```
-/plugin marketplace add nekomorph-woo/DDAi
+/plugin marketplace update wok
 ```
-
-### 安装插件
-
-安装单个插件：
-
-```
-/plugin install tdd@ddai
-/plugin install quick-commit@ddai
-```
-
-安装所有插件（推荐）：
-
-```
-/plugin install write-a-prd@ddai
-/plugin install office-hours@ddai
-/plugin install prd-to-plan@ddai
-/plugin install prd-to-issues@ddai
-/plugin install design-an-interface@ddai
-/plugin install grill-me@ddai
-/plugin install ubiquitous-language@ddai
-/plugin install improve-codebase-architecture@ddai
-/plugin install request-refactor-plan@ddai
-/plugin install tdd@ddai
-/plugin install quick-commit@ddai
-/plugin install triage-issue@ddai
-/plugin install write-a-skill@ddai
-/plugin install edit-article@ddai
-/plugin install improve-rule@ddai
-```
-
-### 更新 Marketplace
-
-获取最新插件更新：
-
-```
-/plugin marketplace update ddai
-```
-
-### 使用
-
-在 Claude Code 中直接描述你的需求，相关技能会自动触发：
-
-```
-用户: 我想做一个用户登录功能，帮我评估一下值不值得做
-→ 触发 office-hours
-
-用户: 帮我写一个 PRD
-→ 触发 write-a-prd
-
-用户: 用 TDD 实现这个功能
-→ 触发 tdd
-```
-
-### 创建自定义技能
-
-使用 `write-a-skill` 创建个人技能：
-
-```
-用户: 帮我创建一个技能，用于生成 API 文档
-→ 触发 write-a-skill
-```
-
----
 
 ## 目录结构
 
 ```
-DDAi/
-├── plugins/                    # 插件目录
-│   ├── office-hours/          # 需求价值诊断
-│   ├── write-a-prd/           # PRD 编写
-│   ├── prd-to-plan/           # PRD 转计划
-│   ├── prd-to-issues/         # PRD 转 issue
-│   ├── design-an-interface/   # 接口设计
-│   ├── grill-me/              # 计划压力测试
-│   ├── ubiquitous-language/   # 统一语言
-│   ├── improve-architecture/  # 架构改进
-│   ├── request-refactor-plan/ # 重构计划
-│   ├── tdd/                   # 测试驱动开发
-│   ├── quick-commit/          # 规范化提交
-│   ├── triage-issue/          # 问题排查
-│   ├── write-a-skill/         # 创建技能
-│   ├── edit-article/          # 文章编辑
-│   └── improve-rule/          # Rules 管理
+wok/
+├── plugins/                      # 15 个 marketplace 插件
 ├── .claude/
-│   └── skills/                # 全局技能
-│       ├── write-ddai-skill/  # 创建 DDAi 插件
-│       └── ddai-commit/       # DDAi 专用提交
-├── CLAUDE.md                  # 项目规范
-└── README.md                  # 本文件
+│   ├── rules/                    # 项目规则
+│   └── skills/                   # 项目内部技能
+│       ├── write-wok-skill/      # 插件编写指南
+│       ├── wok-commit/           # 提交规范
+│       └── wok-manage-version/   # 版本管理
+├── CLAUDE.md
+└── README.md
 ```
-
----
 
 ## 贡献
 
-欢迎贡献新插件或改进现有插件。请参考：
-
-- [write-ddai-skill](/.claude/skills/write-ddai-skill/) - 创建 DDAi 插件指南
-- [CLAUDE.md](/CLAUDE.md) - 语气措辞规范
-
----
+- [write-wok-skill](/.claude/skills/write-wok-skill/) — 插件编写规范
+- [CLAUDE.md](/CLAUDE.md) — 语气措辞规范
 
 ## License
 

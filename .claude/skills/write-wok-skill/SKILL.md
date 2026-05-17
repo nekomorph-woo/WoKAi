@@ -1,11 +1,11 @@
 ---
-name: write-ddai-skill
-description: 创建 DDAi 项目技能或 marketplace 插件，区分内部维护工具和对外分发插件。Use when 用户要求创建、编写或开发 DDAi 技能/插件，或提到 "DDAi plugin" / "DDAi 插件" / "DDAi skill" / "marketplace plugin" / "项目技能"。
+name: write-wok-skill
+description: 创建 wok 项目技能或 marketplace 插件，区分内部维护工具和对外分发插件。Use when 用户要求创建、编写或开发 wok 技能/插件，或提到 "wok plugin" / "wok 插件" / "wok skill" / "marketplace plugin" / "项目技能"。
 ---
 
-# DDAi 技能/插件编写指南
+# wok 技能/插件编写指南
 
-辅助用户创建 DDAi 项目技能或 marketplace 插件。
+辅助用户创建 wok 项目技能或 marketplace 插件。
 
 ## 两种模式
 
@@ -31,17 +31,17 @@ description: 创建 DDAi 项目技能或 marketplace 插件，区分内部维护
 ```
 ✅ plugins/ooops-up/                → 面向用户的 commit 工具，marketplace 分发
 ✅ plugins/tdd/                         → TDD 工作流，任何项目可用
-✅ .claude/skills/ddai-commit/          → 仅 DDAi 项目使用的 commit 规范
-✅ .claude/skills/ddai-manage-version/  → 管理 DDAi 版本号，仅本项目需要
-✅ .claude/skills/write-ddai-skill/     → 创建技能/插件的元工具，仅本项目需要
+✅ .claude/skills/wok-commit/          → 仅 wok 项目使用的 commit 规范
+✅ .claude/skills/wok-manage-version/  → 管理 wok 版本号，仅本项目需要
+✅ .claude/skills/write-wok-skill/     → 创建技能/插件的元工具，仅本项目需要
 ```
 
 ### Bad Case
 
 ```
-❌ plugins/ddai-manage-version/
+❌ plugins/wok-manage-version/
    问题: 管理本项目版本号，外部用户无此需求，不应作为 marketplace 插件分发
-   修正: 移至 .claude/skills/ddai-manage-version/SKILL.md
+   修正: 移至 .claude/skills/wok-manage-version/SKILL.md
 
 ❌ .claude/skills/tdd/
    问题: TDD 是通用开发实践，应作为 marketplace 插件分发
@@ -206,7 +206,7 @@ description: 能力简述。Use when [具体触发条件]。
 
 1. 使用 Bash 执行：
    ```bash
-   ls ~/.claude/plugins/cache/ddai/<name>/*/skills/<name>/SKILL.md
+   ls ~/.claude/plugins/cache/wok/<name>/*/skills/<name>/SKILL.md
    ```
 
 2. 使用 Read 工具读取输出的路径

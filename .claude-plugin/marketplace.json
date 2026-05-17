@@ -1,11 +1,11 @@
 {
-  "name": "ddai",
+  "name": "wok",
   "owner": {
     "name": "nekomorph_566",
     "email": "chaoowoo2233@gmail.com"
   },
   "metadata": {
-    "description": "DDAi 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
+    "description": "wok 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
     "version": "0.9.0"
   },
   "plugins": [

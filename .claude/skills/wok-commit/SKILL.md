@@ -1,9 +1,9 @@
 ---
-name: ddai-commit
+name: wok-commit
 description: 规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、或规范 commit message。
 ---
 
-# DDAi Commit
+# wok Commit
 
 规范化 commit message 格式，支持关联 GitHub/GitLab issue 自动关闭。
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# init-skill.sh - 创建 DDAi 技能或插件骨架
+# init-skill.sh - 创建 wok 技能或插件骨架
 # 用法: init-skill.sh <name> <type>
 #   type: skill（项目技能）或 plugin（Marketplace 插件）
 
@@ -9,7 +9,7 @@ set -e
 SKILL_NAME="$1"
 SKILL_TYPE="$2"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-DDAI_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+WOK_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
 if [ -z "$SKILL_NAME" ] || [ -z "$SKILL_TYPE" ]; then
     echo "用法: init-skill.sh <name> <type>"
@@ -21,7 +21,7 @@ if [ -z "$SKILL_NAME" ] || [ -z "$SKILL_TYPE" ]; then
     echo "        plugin  → plugins/<name>/（Marketplace 插件，完整结构）"
     echo ""
     echo "示例:"
-    echo "  init-skill.sh ddai-commit skill"
+    echo "  init-skill.sh wok-commit skill"
     echo "  init-skill.sh format-json plugin"
     exit 1
 fi
@@ -40,7 +40,7 @@ fi
 
 # ── 模式 A: 项目技能 ──
 if [ "$SKILL_TYPE" = "skill" ]; then
-    TARGET_DIR="$DDAI_ROOT/.claude/skills/$SKILL_NAME"
+    TARGET_DIR="$WOK_ROOT/.claude/skills/$SKILL_NAME"
 
     if [ -d "$TARGET_DIR" ]; then
         echo "错误: 技能目录已存在: $TARGET_DIR"
@@ -81,7 +81,7 @@ EOF
 
 # ── 模式 B: Marketplace 插件 ──
 else
-    TARGET_DIR="$DDAI_ROOT/plugins/$SKILL_NAME"
+    TARGET_DIR="$WOK_ROOT/plugins/$SKILL_NAME"
 
     if [ -d "$TARGET_DIR" ]; then
         echo "错误: 插件目录已存在: $TARGET_DIR"
@@ -116,7 +116,7 @@ description: 能力简述。Use when [具体触发条件]。
 
 1. 使用 Bash 执行：
    \`\`\`bash
-   ls ~/.claude/plugins/cache/ddai/$SKILL_NAME/*/skills/$SKILL_NAME/SKILL.md
+   ls ~/.claude/plugins/cache/wok/$SKILL_NAME/*/skills/$SKILL_NAME/SKILL.md
    \`\`\`
 
 2. 使用 Read 工具读取输出的路径

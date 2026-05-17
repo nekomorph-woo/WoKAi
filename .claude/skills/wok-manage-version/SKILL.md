@@ -1,11 +1,11 @@
 ---
-name: ddai-manage-version
-description: 管理 DDAi 插件版本号的升级与同步，确保 plugin.json 与 marketplace.json 一致。Use when 用户要求升级版本、同步版本号、审计版本一致性，或提到 "bump" / "版本" / "version" / "同步版本"。
+name: wok-manage-version
+description: 管理 wok 插件版本号的升级与同步，确保 plugin.json 与 marketplace.json 一致。Use when 用户要求升级版本、同步版本号、审计版本一致性，或提到 "bump" / "版本" / "version" / "同步版本"。
 ---
 
-# DDAi 版本管理
+# wok 版本管理
 
-管理 DDAi marketplace 中插件的版本号升级与同步。
+管理 wok marketplace 中插件的版本号升级与同步。
 
 ## 版本号架构
 

@@ -9,7 +9,7 @@ description: 管理 Claude Code 文件排除规则，同步维护所有工具层
 
 1. 使用 Bash 执行：
    ```bash
-   ls ~/.claude/plugins/cache/ddai/seal-the-pantry/*/skills/seal-the-pantry/SKILL.md
+   ls ~/.claude/plugins/cache/wok/seal-the-pantry/*/skills/seal-the-pantry/SKILL.md
    ```
 
 2. 使用 Read 工具读取输出的路径
