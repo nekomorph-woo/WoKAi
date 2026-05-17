@@ -52,12 +52,6 @@
       "version": "0.4.0"
     },
     {
-      "name": "office-hours",
-      "source": "./plugins/office-hours",
-      "description": "需求价值诊断工具。通过六道强制问题分析需求真实性、现状替代方案、目标用户具体性、最小可行切入点。Use when 用户要求分析需求价值、评估想法可行性、提到 \"brainstorm this\" / \"这个值得做吗\" / \"我有個想法\"，或在编写代码前需要深度思考产品方向。",
-      "version": "0.1.0"
-    },
-    {
       "name": "analyse-to-rule",
       "source": "./plugins/analyse-to-rule",
       "description": "分析近7日会话日志，提取编码习惯、工程实践和沟通偏好，自动生成用户级和项目级 rules 文件。Use when 用户要求生成规则、分析习惯、提取洞见、或提到 \"insights\" / \"洞见\" / \"规则生成\" / \"analyse-to-rule\"。",
