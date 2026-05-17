@@ -60,49 +60,27 @@ Closes #<issue1>, closes #<issue2>
 - 使用检测到的语言编写 description
 - 格式: `<type>(<scope>): <description>`
 
-### 4. 询问关联 Issue
+### 4. 自动关联 Issue
 
-使用 AskUserQuestion 询问：
+从上下文中扫描 issue 关联信号，**无信号则跳过，不询问**。
 
+**扫描范围**（按优先级）：
+
+| 信号 | 示例 |
+|------|------|
+| 用户消息中包含 `#<数字>` | "修复 #42"、"关联 #7 和 #13" |
+| 用户消息中包含 issue URL | `https://github.com/owner/repo/issues/42` |
+| 对话上下文中近期创建了 issue | diagnose-the-symptom / triage-issue 的输出含 issue 编号 |
+| commit message draft 中引用了 issue | description 自带 `#<数字>` |
+
+**匹配到 issue 时**：提取所有 issue 编号，追加到 commit message：
 ```
-是否关联 issue？[y/N]
+<type>(<scope>): <description>
+
+Closes #42, closes #13
 ```
 
-若用户选择 `y`：
-
-1. **拉取 issue 列表**
-
-   GitHub:
-   ```bash
-   gh issue list --state open --limit 20 --json number,title
-   ```
-
-   GitLab:
-   ```bash
-   glab issue list --state opened --per-page 20
-   ```
-
-2. **展示列表供多选**
-
-   使用 AskUserQuestion（multiSelect: true）：
-
-   ```
-   选择要关联的 issue（可多选）：
-   ○ #123 修复登录 token 过期问题
-   ○ #122 添加用户头像上传功能
-   ○ #121 优化数据库查询性能
-   ...
-   ○ 跳过（不关联）
-   ```
-
-3. **追加关闭语句**
-
-   若用户选择了 issue，追加到 commit message：
-   ```
-   <type>(<scope>): <description>
-
-   Closes #123, closes #122
-   ```
+**未匹配时**：直接进入提交，不询问。
 
 ### 5. 执行提交
 
