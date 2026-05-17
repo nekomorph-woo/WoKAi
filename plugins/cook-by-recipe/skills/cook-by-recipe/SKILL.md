@@ -139,20 +139,22 @@ GREEN: 使测试通过的最小代码 → 通过
 
 **RED 状态下不要重构。** 先回到 GREEN。
 
-### 5. 进度回填
+### 5. Step 完成与进度回填
 
-当上游 `_plan.md` 存在时，每完成一个 step 的 RED-GREEN-REFACTOR 循环后，回填进度：
+当上游 `_plan.md` 存在时，每个 step 的 RED-GREEN-REFACTOR 循环完成后，**必须**回填进度才能进入下一个 step：
 
-**成功**：
+**回填流程**：
 1. 读取 `plans/<feature-name>/_plan.md`
-2. 将对应 step 的 `[ ]` 替换为 `[x]`
+2. 将当前 step 的 `[ ]` 替换为 `[x]`
 3. 写回 `_plan.md`
 
 **失败**（测试无法通过或实现阻塞）：
 1. 读取 `plans/<feature-name>/_plan.md`
-2. 在对应 step 标题下方插入 `> ⚠️ 阻塞：<失败原因>`
+2. 在当前 step 标题下方插入 `> ⚠️ 阻塞：<失败原因>`
 3. 写回 `_plan.md`
 4. **停止后续 step**，不继续推进
+
+**DO NOT** 进入下一个 step 直到 _plan.md 中当前 step 的 checkbox 已更新为 `[x]`。验证方式：读取 _plan.md 确认当前 step 行包含 `[x]`。
 
 ## 每轮检查清单
 
@@ -162,4 +164,5 @@ GREEN: 使测试通过的最小代码 → 通过
 [ ] 测试能经受内部重构
 [ ] 代码对当前测试是最小的
 [ ] 没有添加投机性功能
+[ ] _plan.md 当前 step 的 [ ] 已更新为 [x]
 ```
