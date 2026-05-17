@@ -97,6 +97,7 @@ pipeline:
 
 ```
 plans/<feature-name>/
+├── _roadmap.md             ← forage-the-market 产出
 ├── _define.md              ← define-a-delicacy 产出
 ├── modules/
 │   ├── _registry.md        ← prepare-the-ingredient 产出

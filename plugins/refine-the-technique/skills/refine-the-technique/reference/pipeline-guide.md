@@ -10,10 +10,12 @@
 | bug 根因不明 | `diagnose-the-symptom` → `cook-by-recipe` | 先排查再修 |
 | 改几行现有代码 | `cook-by-recipe` | 无需设计 |
 | 理解现有代码再改 | `pick-the-finding` → `cook-by-recipe` | 先摸底再动手 |
+| 缺功能想法 | `forage-the-market` | 发散灵感 + 设计路线图 |
 | 小功能（1-2 文件） | `define-a-delicacy` → `cook-by-recipe` | 一点设计 + 直接写 |
 | 小功能（有设计存量） | `write-a-recipe` → `cook-by-recipe` | 设计已有，翻译为执行步骤 |
 | 新模块（单个） | `define-a-delicacy` → `prepare-the-ingredient` → `cook-by-recipe` | 单模块跳过批量 |
 | 大功能（多模块） | `define-a-delicacy` → `prepare-the-ingredient` → `season-the-dish` → `write-a-recipe` → `cook-by-recipe` | 完整管道 |
+| 从零规划 | `forage-the-market` → `define-a-delicacy` → ... | 先觅食再定菜 |
 
 ## 灵活入口原则
 
@@ -36,6 +38,7 @@
 
 | Skill | 做什么 | 何时用 |
 |-------|--------|--------|
+| `forage-the-market` | 发散功能想法 + 设计路线图 | 缺灵感、需要功能规划时 |
 | `pick-the-finding` | 探索现有代码约束 | 需要理解已有架构时 |
 | `define-a-delicacy` | 定义 What（问题/目标/锚点/验收标准） | 需要明确做什么时 |
 | `prepare-the-ingredient` | 拆模块 + 设计接口 + 记录决策 | 需要拆分和设计时 |
