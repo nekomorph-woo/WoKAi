@@ -1,133 +1,109 @@
 {
-  "name": "ddai",
+  "name": "wok",
   "owner": {
     "name": "nekomorph_566",
     "email": "chaoowoo2233@gmail.com"
   },
   "metadata": {
-    "description": "DDAi 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
-    "version": "0.8.0"
+    "description": "wok 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
+    "version": "1.1.0"
   },
   "plugins": [
+    {
+      "name": "wok-idea",
+      "source": "./plugins/wok-idea",
+      "description": "发散功能想法并设计版本化路线图。Use when 用户缺乏功能想法、需要灵感、提到 \"forage\" / \"觅食\" / \"roadmap\" / \"功能规划\" / \"路线图\" / \"wok-idea\"。",
+      "version": "1.0.0"
+    },
     {
       "name": "write-a-skill",
       "source": "./plugins/write-a-skill",
       "description": "创建符合规范的用户技能，包含完整结构、渐进式信息展示和配套资源。",
-      "version": "0.2.0"
+      "version": "1.0.0"
     },
     {
-      "name": "quick-commit",
-      "source": "./plugins/quick-commit",
-      "description": "规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、或规范 commit message。",
-      "version": "0.2.0"
+      "name": "wok-issue",
+      "source": "./plugins/wok-issue",
+      "description": "调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 \"wok-issue\" / \"排查\" / \"诊断\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "grill-me",
-      "source": "./plugins/grill-me",
-      "description": "对计划或设计进行系统性追问，逐个解决决策树分支直至达成共识。Use when 用户要求审视计划、压力测试方案、或提到 \"grill me\" / \"拷问我\" / \"审视我\"。",
-      "version": "0.1.0"
+      "name": "wok-grill-me",
+      "source": "./plugins/wok-grill-me",
+      "description": "对计划或设计进行系统性追问，逐个解决决策树分支直至达成共识。Use when 用户要求审视计划、压力测试方案、或提到 \"grill me\" / \"拷问我\" / \"审视我\" / \"wok-grill-me\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "tdd",
-      "source": "./plugins/tdd",
-      "description": "测试驱动开发，采用垂直切片的 RED-GREEN-REFACTOR 循环。Use when 用户要求使用 TDD 开发功能或修复 bug、提到 \"red-green-refactor\" / \"测试先行\" / \"TDD\"。",
-      "version": "0.1.0"
+      "name": "wok-implement",
+      "source": "./plugins/wok-implement",
+      "description": "测试驱动开发，采用垂直切片的 RED-GREEN-REFACTOR 循环。Use when 用户要求使用 TDD 开发功能或修复 bug、提到 \"wok-implement\" / \"red-green-refactor\" / \"测试先行\" / \"TDD\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "triage-issue",
-      "source": "./plugins/triage-issue",
-      "description": "调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 \"triage\" / \"排查\" / \"诊断\"。",
-      "version": "0.1.0"
+      "name": "fast-commit",
+      "source": "./plugins/fast-commit",
+      "description": "规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、冲！、或提到 \"fast-commit\" / \"commit\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "design-an-interface",
-      "source": "./plugins/design-an-interface",
-      "description": "生成多个差异显著的模块接口设计方案。Use when 用户要求设计 API、探索接口选项、对比模块形态、或提到 \"design it twice\" / \"设计接口\" / \"设计两次\"。",
-      "version": "0.1.0"
+      "name": "wok-make-interface",
+      "source": "./plugins/wok-make-interface",
+      "description": "生成多个差异显著的模块接口设计方案。Use when 用户要求设计 API、探索接口选项、对比模块形态、或提到 \"wok-make-interface\" / \"设计接口\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "write-a-prd",
-      "source": "./plugins/write-a-prd",
-      "description": "通过用户访谈、代码库探索和模块设计创建 PRD，提交为 issue。Use when 用户要求编写 PRD、创建产品需求文档、规划新功能、或提到 \"PRD\" / \"产品需求\" / \"需求文档\"。",
-      "version": "0.1.0"
+      "name": "wok-refine-rule",
+      "source": "./plugins/wok-refine-rule",
+      "description": "管理 .claude/rules/ 配置文件：初始化模板、五维度评估规则质量、改进规则、审计规则间冲突。Use when 用户要求初始化规则、评估规则、改进规则、审计规则，或提到 \"rules\" / \"对话风格\" / \"wok-refine-rule\" / \"磨刀\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "prd-to-issues",
-      "source": "./plugins/prd-to-issues",
-      "description": "使用垂直切片（tracer bullet）将 PRD 拆分为可独立认领的 issue。Use when 用户要求将 PRD 转为 issue、创建实现任务、或拆分 PRD 为工作项。",
-      "version": "0.1.0"
+      "name": "wok-distill-session",
+      "source": "./plugins/wok-distill-session",
+      "description": "分析近7日跨项目会话日志，提取编码习惯、工程实践和沟通偏好，生成用户级和项目级 rules 文件。Use when 用户要求生成规则、分析习惯、提取洞见、或提到 \"insights\" / \"洞见\" / \"规则生成\" / \"wok-distill-session\" / \"萃取\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "prd-to-plan",
-      "source": "./plugins/prd-to-plan",
-      "description": "使用垂直切片（tracer bullet）将 PRD 转化为多阶段实现计划，输出至当前项目根目录/plans/。Use when 用户要求拆分 PRD、创建实现计划、规划阶段、或提到 \"tracer bullets\" / \"垂直切片\"。",
-      "version": "0.1.0"
+      "name": "wok-access-hold",
+      "source": "./plugins/wok-access-hold",
+      "description": "管理 Claude Code 文件排除规则，同步维护所有工具层的 deny 配置。Use when 用户要求保护敏感文件、添加/移除 deny 规则、排除 .env/secrets 等文件、或提到 \"wok-access-hold\" / \"文件保护\" / \"排除文件\" / \"锁食材库\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "request-refactor-plan",
-      "source": "./plugins/request-refactor-plan",
-      "description": "通过用户访谈创建详细重构计划，拆分为安全增量提交，提交为 issue。Use when 用户要求规划重构、创建重构 RFC、或将重构拆分为安全增量步骤。",
-      "version": "0.1.0"
+      "name": "wok-define",
+      "source": "./plugins/wok-define",
+      "description": "定义要构建什么（What），输出问题定义、目标、设计锚点和验收标准，严格不包含实现设计。Use when 用户要求定义需求、编写 PRD、描述功能目标，或提到 \"wok-define\" / \"需求定义\" / \"PRD\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "improve-codebase-architecture",
-      "source": "./plugins/improve-codebase-architecture",
-      "description": "探索代码库发现架构改进机会，聚焦加深浅模块提升可测试性。Use when 用户要求改进架构、发现重构机会、整合紧耦合模块、或提高代码可测试性。",
-      "version": "0.1.0"
+      "name": "wok-design",
+      "source": "./plugins/wok-design",
+      "description": "将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 \"wok-design\" / \"模块拆分\" / \"模块设计\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "edit-article",
-      "source": "./plugins/edit-article",
-      "description": "按章节重组文章、提升清晰度、精简措辞。Use when 用户要求编辑文章、修订草稿、优化文案、或改进文档结构。",
-      "version": "0.1.0"
+      "name": "wok-design-review",
+      "source": "./plugins/wok-design-review",
+      "description": "交叉验证模块设计的一致性和完整性，检查接口对齐、依赖方向和跨模块遗漏。Use when 用户要求交叉验证、检查设计一致性、审查模块设计，或提到 \"wok-design-review\" / \"调味\" / \"交叉验证\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "ubiquitous-language",
-      "source": "./plugins/ubiquitous-language",
-      "description": "从对话中提取领域术语，构建一致性词汇表，标记歧义并提议权威术语。Use when 用户要求定义术语、统一词汇、构建词汇表、或提到\"统一语言\"/\"ubiquitous language\"/\"领域术语\"。",
-      "version": "0.1.0"
+      "name": "wok-plan",
+      "source": "./plugins/wok-plan",
+      "description": "将模块设计翻译为编码执行计划，定义文件顺序、集成点和每步验证标准。Use when 用户要求制定开发计划、编写执行步骤、拆分编码任务，或提到 \"wok-plan\" / \"开发计划\" / \"执行计划\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "improve-rule",
-      "source": "./plugins/improve-rule",
-      "description": "管理 .claude/rules/ 配置文件：初始化模板、五维度评估规则质量、改进规则、审计规则间冲突。Use when 用户要求初始化规则、评估规则、改进规则、审计规则，或提到 \"rules\" / \"对话风格\" / \"improve-rule\"。",
-      "version": "0.4.0"
+      "name": "wok-findings",
+      "source": "./plugins/wok-findings",
+      "description": "探索现有代码的设计约束、架构模式和潜在问题，为后续设计提供现状基线。Use when 用户要求探索代码库、理解现有架构、分析设计约束，或提到 \"wok-findings\" / \"探索代码\"。",
+      "version": "1.0.0"
     },
     {
-      "name": "office-hours",
-      "source": "./plugins/office-hours",
-      "description": "需求价值诊断工具。通过六道强制问题分析需求真实性、现状替代方案、目标用户具体性、最小可行切入点。Use when 用户要求分析需求价值、评估想法可行性、提到 \"brainstorm this\" / \"这个值得做吗\" / \"我有個想法\"，或在编写代码前需要深度思考产品方向。",
-      "version": "0.1.0"
-    },
-    {
-      "name": "analyse-to-rule",
-      "source": "./plugins/analyse-to-rule",
-      "description": "分析近7日会话日志，提取编码习惯、工程实践和沟通偏好，自动生成用户级和项目级 rules 文件。Use when 用户要求生成规则、分析习惯、提取洞见、或提到 \"insights\" / \"洞见\" / \"规则生成\" / \"analyse-to-rule\"。",
-      "version": "0.1.0"
-    },
-    {
-      "name": "prd-to-modules",
-      "source": "./plugins/prd-to-modules",
-      "description": "将大 PRD 纵向拆分为自闭环的功能模块，设计模块间依赖关系和对内对外接口，最终为每个模块生成执行计划。Use when 用户要求拆分 PRD 为模块、设计模块接口、规划模块依赖、或提到 \"模块拆分\" / \"模块设计\" / \"prd-to-modules\"。",
-      "version": "0.2.0"
-    },
-    {
-      "name": "resolve-finding",
-      "source": "./plugins/resolve-finding",
-      "description": "通过 /grill-me 拷问逼出决策，反向修补设计文档歧义/冲突，生成代码修改计划。Use when 用户要求解决审阅报告待处理项、修复代码与设计文档不一致、处理待决策项、提到\"resolve finding\"。",
-      "version": "0.1.0"
-    },
-    {
-      "name": "audit-design-docs",
-      "source": "./plugins/audit-design-docs",
-      "description": "系统性审阅多份设计文档，执行实体级索引构建、多维交叉审阅（追溯/一致性/完整性/依赖/假设）、歧义点深拷问，输出结构化审阅报告。Use when 用户要求审阅设计文档、审查架构方案、审计文档一致性、或提到\"设计审阅\"/\"文档审计\"/\"审阅报告\"/\"设计文档对齐\"。",
-      "version": "0.1.0"
-    },
-    {
-      "name": "deny-access",
-      "source": "./plugins/deny-access",
-      "description": "管理 Claude Code 文件排除规则，同步维护所有工具层的 deny 配置。Use when 用户要求保护敏感文件、添加/移除 deny 规则、排除 .env/secrets 等文件、或提到 \"deny access\" / \"文件保护\" / \"排除文件\"。",
-      "version": "0.1.0"
+      "name": "wok-dashboard",
+      "source": "./plugins/wok-dashboard",
+      "description": "部署交互式 HTML dashboard 到 feature 目录，提供管道文档的可视化阅读和备注能力。Use when 用户要求部署 dashboard、打开 dashboard、或提到 \"dashboard\" / \"wok-dashboard\"。",
+      "version": "1.0.0"
     }
   ]
 }
