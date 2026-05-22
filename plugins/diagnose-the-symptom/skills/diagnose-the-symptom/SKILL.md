@@ -3,7 +3,7 @@ name: diagnose-the-symptom
 description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 "diagnose" / "排查" / "诊断" / "diagnose-the-symptom"。
 pipeline:
   upstream: []
-  downstream: [cook-by-recipe]
+  downstream: [cook-by-recipe, season-the-dish]
   gate: false
   output: none
   adaptive: false
@@ -72,6 +72,18 @@ pipeline:
 - 受影响的模块/接口
 - 需要通过测试验证的行为
 - 问题类型：回归缺陷、功能缺失、设计缺陷
+
+### 3.5 设计缺陷审查（仅当根因为设计缺陷时）
+
+当 §3 判定问题类型为"设计缺陷"时：
+
+1. 从受影响模块名称搜索 `plans/` 下对应的 `design.md`（Glob `plans/**/modules/*/design.md`，匹配模块名关键词）
+2. **找到相关 design.md**：使用 AskUserQuestion 询问用户：
+   - "触发设计审查" → 对找到的 design.md 执行 `season-the-dish` 的 3 项检查（接口一致性、依赖方向、跨模块覆盖）
+   - "跳过审查，直接创建 Issue"
+3. **未找到**：静默跳过，继续 §4
+
+审查发现追加到 Issue body 的"根因分析"节中。
 
 ### 4. 设计 TDD 修复计划
 

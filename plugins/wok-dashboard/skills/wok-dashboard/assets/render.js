@@ -229,6 +229,16 @@
     });
     html += '</div></div>';
 
+    // Findings baseline (if _findings.md exists at system level)
+    const findingsKey = findFile('_findings.md');
+    if (findingsKey) {
+      const findings = state.parsed.get(findingsKey);
+      html += '<div class="overview-section"><h2>代码探索基线</h2>';
+      html += '<details class="findings-details"><summary class="findings-summary">pick-the-finding 探索结果</summary>';
+      html += '<div class="findings-body">' + renderMd(findings.body, findingsKey) + '</div>';
+      html += '</details></div>';
+    }
+
     // Brief list
     html += '<div class="overview-section"><h2>文档概要</h2><ul class="brief-list">';
     for (const [name, parsed] of state.parsed) {
