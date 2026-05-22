@@ -97,15 +97,15 @@ pipeline:
 
 ```
 plans/<feature-name>/
-├── _roadmap.md             ← forage-the-market 产出
-├── _define.md              ← define-a-delicacy 产出
+├── _roadmap.md             ← wok-idea 产出
+├── _define.md              ← wok-define 产出
 ├── modules/
-│   ├── _registry.md        ← prepare-the-ingredient 产出
+│   ├── _registry.md        ← wok-design 产出
 │   └── <module-name>/
 │       ├── design.md       ← 模块设计（intent: reference）
 │       └── decisions.md    ← 模块决策（intent: decision）
-├── _check.md               ← season-the-dish 产出
-└── _plan.md                ← write-a-recipe 产出
+├── _check.md               ← wok-design-review 产出
+└── _plan.md                ← wok-plan 产出
 ```
 
 ### 读取协议

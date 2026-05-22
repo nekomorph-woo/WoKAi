@@ -10,9 +10,9 @@
   },
   "plugins": [
     {
-      "name": "forage-the-market",
-      "source": "./plugins/forage-the-market",
-      "description": "发散功能想法并设计版本化路线图。Use when 用户缺乏功能想法、需要灵感、提到 \"forage\" / \"觅食\" / \"roadmap\" / \"功能规划\" / \"路线图\" / \"forage-the-market\"。",
+      "name": "wok-idea",
+      "source": "./plugins/wok-idea",
+      "description": "发散功能想法并设计版本化路线图。Use when 用户缺乏功能想法、需要灵感、提到 \"forage\" / \"觅食\" / \"roadmap\" / \"功能规划\" / \"路线图\" / \"wok-idea\"。",
       "version": "1.0.0"
     },
     {
@@ -22,81 +22,81 @@
       "version": "1.0.0"
     },
     {
-      "name": "ooops-up",
-      "source": "./plugins/ooops-up",
-      "description": "规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、冲！、或提到 \"ooops-up\" / \"commit\"。",
+      "name": "wok-issue",
+      "source": "./plugins/wok-issue",
+      "description": "调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 \"wok-issue\" / \"排查\" / \"诊断\"。",
       "version": "1.0.0"
     },
     {
-      "name": "grill-me",
-      "source": "./plugins/grill-me",
-      "description": "对计划或设计进行系统性追问，逐个解决决策树分支直至达成共识。Use when 用户要求审视计划、压力测试方案、或提到 \"grill me\" / \"拷问我\" / \"审视我\"。",
+      "name": "wok-grill-me",
+      "source": "./plugins/wok-grill-me",
+      "description": "对计划或设计进行系统性追问，逐个解决决策树分支直至达成共识。Use when 用户要求审视计划、压力测试方案、或提到 \"grill me\" / \"拷问我\" / \"审视我\" / \"wok-grill-me\"。",
       "version": "1.0.0"
     },
     {
-      "name": "cook-by-recipe",
-      "source": "./plugins/cook-by-recipe",
-      "description": "测试驱动开发，采用垂直切片的 RED-GREEN-REFACTOR 循环。Use when 用户要求使用 TDD 开发功能或修复 bug、提到 \"cook\" / \"按谱烹饪\" / \"red-green-refactor\" / \"测试先行\" / \"TDD\"。",
+      "name": "wok-implement",
+      "source": "./plugins/wok-implement",
+      "description": "测试驱动开发，采用垂直切片的 RED-GREEN-REFACTOR 循环。Use when 用户要求使用 TDD 开发功能或修复 bug、提到 \"wok-implement\" / \"red-green-refactor\" / \"测试先行\" / \"TDD\"。",
       "version": "1.0.0"
     },
     {
-      "name": "diagnose-the-symptom",
-      "source": "./plugins/diagnose-the-symptom",
-      "description": "调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 \"diagnose\" / \"排查\" / \"诊断\" / \"diagnose-the-symptom\"。",
+      "name": "fast-commit",
+      "source": "./plugins/fast-commit",
+      "description": "规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、冲！、或提到 \"fast-commit\" / \"commit\"。",
       "version": "1.0.0"
     },
     {
-      "name": "plate-the-dish",
-      "source": "./plugins/plate-the-dish",
-      "description": "生成多个差异显著的模块接口设计方案。Use when 用户要求设计 API、探索接口选项、对比模块形态、或提到 \"plate\" / \"摆盘\" / \"设计接口\" / \"plate-the-dish\"。",
+      "name": "wok-make-interface",
+      "source": "./plugins/wok-make-interface",
+      "description": "生成多个差异显著的模块接口设计方案。Use when 用户要求设计 API、探索接口选项、对比模块形态、或提到 \"wok-make-interface\" / \"设计接口\"。",
       "version": "1.0.0"
     },
     {
-      "name": "refine-the-technique",
-      "source": "./plugins/refine-the-technique",
-      "description": "管理 .claude/rules/ 配置文件：初始化模板、五维度评估规则质量、改进规则、审计规则间冲突。Use when 用户要求初始化规则、评估规则、改进规则、审计规则，或提到 \"rules\" / \"对话风格\" / \"refine-the-technique\" / \"磨刀\"。",
+      "name": "wok-refine-rule",
+      "source": "./plugins/wok-refine-rule",
+      "description": "管理 .claude/rules/ 配置文件：初始化模板、五维度评估规则质量、改进规则、审计规则间冲突。Use when 用户要求初始化规则、评估规则、改进规则、审计规则，或提到 \"rules\" / \"对话风格\" / \"wok-refine-rule\" / \"磨刀\"。",
       "version": "1.0.0"
     },
     {
-      "name": "distill-the-essence",
-      "source": "./plugins/distill-the-essence",
-      "description": "分析近7日跨项目会话日志，提取编码习惯、工程实践和沟通偏好，生成用户级和项目级 rules 文件。Use when 用户要求生成规则、分析习惯、提取洞见、或提到 \"insights\" / \"洞见\" / \"规则生成\" / \"distill-the-essence\" / \"萃取\"。",
+      "name": "wok-distill-session",
+      "source": "./plugins/wok-distill-session",
+      "description": "分析近7日跨项目会话日志，提取编码习惯、工程实践和沟通偏好，生成用户级和项目级 rules 文件。Use when 用户要求生成规则、分析习惯、提取洞见、或提到 \"insights\" / \"洞见\" / \"规则生成\" / \"wok-distill-session\" / \"萃取\"。",
       "version": "1.0.0"
     },
     {
-      "name": "seal-the-pantry",
-      "source": "./plugins/seal-the-pantry",
-      "description": "管理 Claude Code 文件排除规则，同步维护所有工具层的 deny 配置。Use when 用户要求保护敏感文件、添加/移除 deny 规则、排除 .env/secrets 等文件、或提到 \"seal\" / \"文件保护\" / \"排除文件\" / \"seal-the-pantry\" / \"锁食材库\"。",
+      "name": "wok-access-hold",
+      "source": "./plugins/wok-access-hold",
+      "description": "管理 Claude Code 文件排除规则，同步维护所有工具层的 deny 配置。Use when 用户要求保护敏感文件、添加/移除 deny 规则、排除 .env/secrets 等文件、或提到 \"wok-access-hold\" / \"文件保护\" / \"排除文件\" / \"锁食材库\"。",
       "version": "1.0.0"
     },
     {
-      "name": "define-a-delicacy",
-      "source": "./plugins/define-a-delicacy",
-      "description": "定义要构建什么（What），输出问题定义、目标、设计锚点和验收标准，严格不包含实现设计。Use when 用户要求定义需求、编写 PRD、描述功能目标，或提到 \"define\" / \"需求定义\" / \"PRD\" / \"define-a-delicacy\"。",
+      "name": "wok-define",
+      "source": "./plugins/wok-define",
+      "description": "定义要构建什么（What），输出问题定义、目标、设计锚点和验收标准，严格不包含实现设计。Use when 用户要求定义需求、编写 PRD、描述功能目标，或提到 \"wok-define\" / \"需求定义\" / \"PRD\"。",
       "version": "1.0.0"
     },
     {
-      "name": "prepare-the-ingredient",
-      "source": "./plugins/prepare-the-ingredient",
-      "description": "将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 \"modularize\" / \"模块拆分\" / \"模块设计\" / \"prepare-the-ingredient\"。",
+      "name": "wok-design",
+      "source": "./plugins/wok-design",
+      "description": "将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 \"wok-design\" / \"模块拆分\" / \"模块设计\"。",
       "version": "1.0.0"
     },
     {
-      "name": "season-the-dish",
-      "source": "./plugins/season-the-dish",
-      "description": "交叉验证模块设计的一致性和完整性，检查接口对齐、依赖方向和跨模块遗漏。Use when 用户要求交叉验证、检查设计一致性、审查模块设计，或提到 \"season\" / \"调味\" / \"交叉验证\" / \"season-the-dish\"。",
+      "name": "wok-design-review",
+      "source": "./plugins/wok-design-review",
+      "description": "交叉验证模块设计的一致性和完整性，检查接口对齐、依赖方向和跨模块遗漏。Use when 用户要求交叉验证、检查设计一致性、审查模块设计，或提到 \"wok-design-review\" / \"调味\" / \"交叉验证\"。",
       "version": "1.0.0"
     },
     {
-      "name": "write-a-recipe",
-      "source": "./plugins/write-a-recipe",
-      "description": "将模块设计翻译为编码执行计划，定义文件顺序、集成点和每步验证标准。Use when 用户要求制定开发计划、编写执行步骤、拆分编码任务，或提到 \"devplan\" / \"开发计划\" / \"执行计划\" / \"write-a-recipe\"。",
+      "name": "wok-plan",
+      "source": "./plugins/wok-plan",
+      "description": "将模块设计翻译为编码执行计划，定义文件顺序、集成点和每步验证标准。Use when 用户要求制定开发计划、编写执行步骤、拆分编码任务，或提到 \"wok-plan\" / \"开发计划\" / \"执行计划\"。",
       "version": "1.0.0"
     },
     {
-      "name": "pick-the-finding",
-      "source": "./plugins/pick-the-finding",
-      "description": "探索现有代码的设计约束、架构模式和潜在问题，为后续设计提供现状基线。Use when 用户要求探索代码库、理解现有架构、分析设计约束，或提到 \"pick\" / \"挑\" / \"探索代码\" / \"pick-the-finding\"。",
+      "name": "wok-findings",
+      "source": "./plugins/wok-findings",
+      "description": "探索现有代码的设计约束、架构模式和潜在问题，为后续设计提供现状基线。Use when 用户要求探索代码库、理解现有架构、分析设计约束，或提到 \"wok-findings\" / \"探索代码\"。",
       "version": "1.0.0"
     },
     {

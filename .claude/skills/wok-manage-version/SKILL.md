@@ -93,8 +93,8 @@ plugins/<name>/.claude-plugin/plugin.json
 📊 版本一致性审计
 
 ✅ write-a-skill      plugin.json: 0.2.0  marketplace.json: 0.2.0
-✅ ooops-up       plugin.json: 0.2.0  marketplace.json: 0.2.0
-❌ refine-the-technique       plugin.json: 0.3.0  marketplace.json: 0.2.0  ← 不一致
+✅ fast-commit       plugin.json: 0.2.0  marketplace.json: 0.2.0
+❌ wok-refine-rule       plugin.json: 0.3.0  marketplace.json: 0.2.0  ← 不一致
 
 总计: 16 个插件，15 个一致，1 个不一致
 ```
