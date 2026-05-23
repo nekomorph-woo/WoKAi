@@ -17,7 +17,16 @@ pipeline:
 
 1. 询问用户要构建什么
 2. 通过访谈明确问题、目标、范围
-3. 生成 `plans/<system-name>/<phase-name>/_define.md`
+3. 生成 `_define.md`（路径见下方约定）
+
+### 路径约定
+
+| 场景 | 产出物路径 |
+|------|-----------|
+| 有 roadmap（`_roadmap.md` 存在） | `plans/<system-name>/p<n>-<phase-name>/_define.md` |
+| 无 roadmap（单阶段） | `plans/<system-name>/_define.md` |
+
+**DO NOT** 在无 roadmap 时为 skill 名创建子目录。系统目录即为阶段目录。
 
 ## 工作流程
 
@@ -56,7 +65,7 @@ pipeline:
 
 ### 3. 生成文档
 
-产出 `plans/<system-name>/<phase-name>/_define.md`：
+产出 `<phase-dir>/_define.md`（`<phase-dir>` 与 `_define.md` 同级，无 roadmap 时为 `plans/<system-name>/`）：
 
 ```markdown
 ---

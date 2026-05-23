@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "wok 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
-    "version": "1.1.2"
+    "version": "1.1.3"
   },
   "plugins": [
     {
@@ -37,7 +37,7 @@
       "name": "wok-implement",
       "source": "./plugins/wok-implement",
       "description": "测试驱动开发，采用垂直切片的 RED-GREEN-REFACTOR 循环。Use when 用户要求使用 TDD 开发功能或修复 bug、提到 \"wok-implement\" / \"red-green-refactor\" / \"测试先行\" / \"TDD\"。",
-      "version": "1.0.2"
+      "version": "1.0.3"
     },
     {
       "name": "zap",
@@ -73,25 +73,25 @@
       "name": "wok-define",
       "source": "./plugins/wok-define",
       "description": "定义要构建什么（What），输出问题定义、目标、设计锚点和验收标准，严格不包含实现设计。Use when 用户要求定义需求、编写 PRD、描述功能目标，或提到 \"wok-define\" / \"需求定义\" / \"PRD\"。",
-      "version": "1.0.2"
+      "version": "1.0.3"
     },
     {
       "name": "wok-design",
       "source": "./plugins/wok-design",
       "description": "将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 \"wok-design\" / \"模块拆分\" / \"模块设计\"。",
-      "version": "1.0.2"
+      "version": "1.0.3"
     },
     {
       "name": "wok-design-review",
       "source": "./plugins/wok-design-review",
       "description": "交叉验证模块设计的一致性和完整性，检查接口对齐、依赖方向和跨模块遗漏。Use when 用户要求交叉验证、检查设计一致性、审查模块设计，或提到 \"wok-design-review\" / \"交叉验证\"。",
-      "version": "1.0.2"
+      "version": "1.0.3"
     },
     {
       "name": "wok-plan",
       "source": "./plugins/wok-plan",
       "description": "将模块设计翻译为编码执行计划，定义文件顺序、集成点和每步验证标准。Use when 用户要求制定开发计划、编写执行步骤、拆分编码任务，或提到 \"wok-plan\" / \"开发计划\" / \"执行计划\"。",
-      "version": "1.0.2"
+      "version": "1.0.3"
     },
     {
       "name": "wok-findings",
@@ -103,7 +103,7 @@
       "name": "wok-dashboard",
       "source": "./plugins/wok-dashboard",
       "description": "部署交互式 HTML dashboard 到 feature 目录，提供管道文档的可视化阅读和备注能力。Use when 用户要求部署 dashboard、打开 dashboard、或提到 \"dashboard\" / \"wok-dashboard\"。",
-      "version": "1.0.1"
+      "version": "1.0.2"
     }
   ]
 }

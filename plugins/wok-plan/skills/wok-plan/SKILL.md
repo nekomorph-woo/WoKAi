@@ -23,8 +23,10 @@ pipeline:
 
 ### 1. 读取上游（可选）
 
-- 读取 `plans/<system-name>/<phase-name>/_check.md` — 如有 🔴 阻塞项，提示先解决；文件不存在则跳过
-- 读取 `plans/<system-name>/<phase-name>/modules/_registry.md` — 获取模块列表和依赖顺序；文件不存在则从代码库识别
+> `<phase-dir>` 指 `_define.md` 所在目录。无 roadmap 时为 `plans/<system-name>/`，有 roadmap 时为 `plans/<system-name>/p<n>-<phase>/`。
+
+- 读取 `<phase-dir>/_check.md` — 如有 🔴 阻塞项，提示先解决；文件不存在则跳过
+- 读取 `<phase-dir>/modules/_registry.md` — 获取模块列表和依赖顺序；文件不存在则从代码库识别
 - 读取各模块 `design.md` — 提取接口契约和实现约束；文件不存在则从代码库和对话上下文推断
 
 ### 2. 确定执行顺序
@@ -37,7 +39,7 @@ pipeline:
 
 ### 3. 生成执行计划
 
-产出 `plans/<system-name>/<phase-name>/_plan.md`：
+产出 `<phase-dir>/_plan.md`：
 
 ```markdown
 ---

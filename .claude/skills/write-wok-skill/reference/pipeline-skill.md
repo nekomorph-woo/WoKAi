@@ -93,11 +93,14 @@ pipeline:
 
 ### 目录约定
 
-所有管道产出物统一放在 `plans/<feature-name>/` 下：
+管道产出物统一放在 `plans/<system-name>/` 下。布局取决于是否有 roadmap（多阶段规划）。
+
+#### 无 roadmap（单阶段）
+
+直接在系统目录下生成产出物。系统目录即为阶段目录，**不要创建额外的子目录**：
 
 ```
-plans/<feature-name>/
-├── _roadmap.md             ← wok-idea 产出
+plans/<system-name>/
 ├── _define.md              ← wok-define 产出
 ├── modules/
 │   ├── _registry.md        ← wok-design 产出
@@ -107,6 +110,35 @@ plans/<feature-name>/
 ├── _check.md               ← wok-design-review 产出
 └── _plan.md                ← wok-plan 产出
 ```
+
+#### 有 roadmap（多阶段）
+
+wok-idea 产出 `_roadmap.md`，每个 phase 在独立子目录中完成完整管道循环：
+
+```
+plans/<system-name>/
+├── _roadmap.md                 ← wok-idea 产出
+├── p1-<phase-name>/            ← Phase 1
+│   ├── _define.md
+│   ├── modules/
+│   │   ├── _registry.md
+│   │   └── <module-name>/
+│   │       ├── design.md
+│   │       └── decisions.md
+│   ├── _check.md
+│   └── _plan.md
+└── p2-<phase-name>/            ← Phase 2
+    └── ...
+```
+
+#### 判断规则
+
+| 条件 | 布局 | 产出物路径 |
+|------|------|-----------|
+| `_roadmap.md` 不存在 | 单阶段 | `plans/<system-name>/_define.md` |
+| `_roadmap.md` 存在 | 多阶段 | `plans/<system-name>/p<n>-<phase-name>/_define.md` |
+
+下游技能中统一使用 `<phase-dir>` 指代 `_define.md` 所在目录（单阶段时为 `plans/<system-name>/`，多阶段时为 `plans/<system-name>/p<n>-<phase-name>/`）。
 
 ### 读取协议
 

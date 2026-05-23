@@ -162,6 +162,13 @@
     for (const [key] of state.parsed) {
       if (key.endsWith('/' + suffix) || key === suffix) return key;
     }
+    // Defensive fallback: match by filename portion (handles misnested files)
+    const fileName = suffix.includes('/') ? suffix.split('/').pop() : suffix;
+    if (fileName !== suffix) {
+      for (const [key] of state.parsed) {
+        if (key.endsWith('/' + fileName) || key === fileName) return key;
+      }
+    }
     return null;
   }
 

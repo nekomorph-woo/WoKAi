@@ -3,8 +3,10 @@
 ## 目录结构
 
 ```
-plans/<system-name>/<phase-name>/
-├── _define.md                    ← 上游产出
+plans/<system-name>/                ← 无 roadmap 时（下文以 <phase-dir> 统称）
+plans/<system-name>/p<n>-<phase>/  ← 有 roadmap 时
+<phase-dir>/
+├── _define.md                    ← 上游产出（wok-define）
 └── modules/
     ├── _registry.md              ← 模块注册表 + 持久架构决策
     ├── _shared/                  ← 公共产物（交叉分析提取）

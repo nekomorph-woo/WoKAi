@@ -25,7 +25,7 @@ pipeline:
 
 ### 1. 读取上游（可选）
 
-检查 `plans/<system-name>/<phase-name>/_define.md` 是否存在：
+检查 `<phase-dir>/_define.md` 是否存在（`<phase-dir>` 指 `_define.md` 所在目录，无 roadmap 时为 `plans/<system-name>/`，有 roadmap 时为 `plans/<system-name>/p<n>-<phase>/`）：
 
 - **存在**：读取 frontmatter，提取设计锚点、用户故事、验收标准作为设计输入
 - **不存在**：从当前对话上下文和代码库探索中获取必要信息，正常执行
@@ -49,7 +49,7 @@ pipeline:
 - 追求 **deep module**：接口简单，实现复杂度隐藏在内部
 - 每个模块 **自闭环**：独立可测试、可交付（垂直切片）
 - 模块之间单向依赖，无循环
-- 产出模块注册表 `plans/<system-name>/<phase-name>/modules/_registry.md`
+- 产出模块注册表 `<phase-dir>/modules/_registry.md`
 
 ### 3. 验证门：模块边界
 
@@ -68,8 +68,8 @@ pipeline:
 
 - `/wok-make-interface` 生成 3+ 个差异显著的接口设计方案
 - 用户选择最优方案
-- 产出 `plans/<system-name>/<phase-name>/modules/<name>/design.md`（intent: reference）— 接口契约
-- 产出 `plans/<system-name>/<phase-name>/modules/<name>/decisions.md`（intent: explanation）— 设计决策
+- 产出 `<phase-dir>/modules/<name>/design.md`（intent: reference）— 接口契约
+- 产出 `<phase-dir>/modules/<name>/decisions.md`（intent: explanation）— 设计决策
 
 ### 5. 验证门：模板深度
 
@@ -87,7 +87,7 @@ pipeline:
 
 扫描全部模块设计文档，识别跨模块重复定义的数据模型、工具方法、共享类型：
 
-- 提取到 `plans/<system-name>/<phase-name>/modules/_shared/` 目录
+- 提取到 `<phase-dir>/modules/_shared/` 目录
 - 更新各模块 design.md 中的引用，指向共享定义而非重复副本
 - 判断标准：2+ 个模块使用相同的类型/方法/常量则提取
 

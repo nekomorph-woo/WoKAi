@@ -85,7 +85,7 @@ pipeline:
 
 编写代码前，检查上游是否有执行计划：
 
-**读取上游**（可选）：检查 `plans/<system-name>/<phase-name>/_plan.md` 是否存在：
+**读取上游**（可选）：检查 `<phase-dir>/_plan.md` 是否存在（`<phase-dir>` 与 `_define.md` 同级）：
 - **存在**：读取 frontmatter 和执行步骤，作为 TDD 循环的输入。执行步骤中的验证标准直接映射为测试断言目标
 - **不存在**：从当前对话上下文和代码库中获取必要信息
 
@@ -144,12 +144,12 @@ GREEN: 使测试通过的最小代码 → 通过
 当上游 `_plan.md` 存在时，每个 step 的 RED-GREEN-REFACTOR 循环完成后，**必须**回填进度才能进入下一个 step：
 
 **回填流程**：
-1. 读取 `plans/<system-name>/<phase-name>/_plan.md`
+1. 读取 `<phase-dir>/_plan.md`
 2. 将当前 step 的 `[ ]` 替换为 `[x]`
 3. 写回 `_plan.md`
 
 **失败**（测试无法通过或实现阻塞）：
-1. 读取 `plans/<system-name>/<phase-name>/_plan.md`
+1. 读取 `<phase-dir>/_plan.md`
 2. 在当前 step 标题下方插入 `> ⚠️ 阻塞：<失败原因>`
 3. 写回 `_plan.md`
 4. **停止后续 step**，不继续推进

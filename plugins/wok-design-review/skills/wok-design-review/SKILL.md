@@ -17,13 +17,13 @@ pipeline:
 
 1. 读取 `modules/_registry.md` 获取模块列表
 2. 执行 3 项检查
-3. 产出 `plans/<system-name>/<phase-name>/_check.md`
+3. 产出 `<phase-dir>/_check.md`（与 `_define.md` 同级）
 
 ## 工作流程
 
 ### 1. 读取上游（可选）
 
-检查 `plans/<system-name>/<phase-name>/modules/_registry.md` 是否存在：
+检查 `<phase-dir>/modules/_registry.md` 是否存在（`<phase-dir>` 与 `_define.md` 同级）：
 
 - **存在**：读取 frontmatter，提取模块列表和依赖图，加载各模块 `design.md` 的 frontmatter 和接口契约
 - **不存在**：从代码库和当前对话上下文中识别模块和接口定义
@@ -40,7 +40,7 @@ pipeline:
 
 ### 3. 生成检查结果
 
-产出 `plans/<system-name>/<phase-name>/_check.md`：
+产出 `<phase-dir>/_check.md`：
 
 ```markdown
 ---
