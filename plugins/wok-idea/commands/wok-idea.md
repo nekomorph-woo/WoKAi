@@ -1,6 +1,6 @@
 ---
 name: wok-idea
-description: 发散功能想法并设计版本化路线图。Use when 用户缺乏功能想法、需要灵感、提到 "forage" / "觅食" / "roadmap" / "功能规划" / "路线图" / "forage-the-market"。
+description: 发散功能想法并设计版本化路线图。Use when 用户缺乏功能想法、需要灵感、提到 "forage" / "觅食" / "roadmap" / "功能规划" / "路线图" / "wok-idea"。
 ---
 
 执行 [wok-idea 技能](../skills/wok-idea/SKILL.md) 的完整流程。

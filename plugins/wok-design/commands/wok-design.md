@@ -1,6 +1,6 @@
 ---
 name: wok-design
-description: 将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 "modularize" / "模块拆分" / "模块设计" / "prepare-the-ingredient"。
+description: 将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 "wok-design" / "模块拆分" / "模块设计"。
 ---
 
 执行 [wok-design 技能](../skills/wok-design/SKILL.md) 的完整流程。

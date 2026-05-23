@@ -1,6 +1,6 @@
 ---
 name: wok-define
-description: 定义要构建什么（What），输出问题定义、目标、设计锚点和验收标准，严格不包含实现设计。Use when 用户要求定义需求、编写 PRD、描述功能目标，或提到 "define" / "需求定义" / "PRD" / "define-a-delicacy"。
+description: 定义要构建什么（What），输出问题定义、目标、设计锚点和验收标准，严格不包含实现设计。Use when 用户要求定义需求、编写 PRD、描述功能目标，或提到 "wok-define" / "需求定义" / "PRD"。
 ---
 
 执行 [wok-define 技能](../skills/wok-define/SKILL.md) 的完整流程。

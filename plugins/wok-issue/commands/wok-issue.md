@@ -1,6 +1,6 @@
 ---
 name: wok-issue
-description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 "diagnose" / "排查" / "诊断" / "diagnose-the-symptom"。
+description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 "wok-issue" / "排查" / "诊断"。
 ---
 
 执行 wok-issue 技能的完整流程。

@@ -1,6 +1,6 @@
 ---
 name: wok-dashboard
-description: 部署管道文档 dashboard 到指定 feature 目录。Use when 用户要求部署 dashboard、打开 dashboard、或提到 "dashboard" / "wok-dashboard"。
+description: 部署交互式 HTML dashboard 到 feature 目录，提供管道文档的可视化阅读和备注能力。Use when 用户要求部署 dashboard、打开 dashboard、或提到 "dashboard" / "wok-dashboard"。
 ---
 
 执行 [wok-dashboard 技能](../skills/wok-dashboard/SKILL.md) 的完整流程。
