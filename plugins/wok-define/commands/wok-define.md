@@ -9,7 +9,7 @@ description: 定义要构建什么（What），输出问题定义、目标、设
 
 1. 使用 Bash 执行：
    ```bash
-   ls ~/.claude/plugins/cache/ddai/wok-define/*/skills/wok-define/SKILL.md
+   ls ~/.claude/plugins/cache/wok/wok-define/*/skills/wok-define/SKILL.md
    ```
 
 2. 使用 Read 工具读取输出的路径

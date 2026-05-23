@@ -9,7 +9,7 @@ description: 规范化 commit message 格式，支持关联 issue 自动关闭�
 
 1. 使用 Bash 执行：
    ```bash
-   ls ~/.claude/plugins/cache/ddai/fast-commit/*/skills/fast-commit/SKILL.md
+   ls ~/.claude/plugins/cache/wok/fast-commit/*/skills/fast-commit/SKILL.md
    ```
 
 2. 使用 Read 工具读取输出的路径

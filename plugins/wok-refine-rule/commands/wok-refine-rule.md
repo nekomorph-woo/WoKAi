@@ -9,7 +9,7 @@ description: 管理 .claude/rules/ 配置文件：初始化模板、五维度评
 
 1. 使用 Bash 执行：
    ```bash
-   ls ~/.claude/plugins/cache/ddai/wok-refine-rule/*/skills/wok-refine-rule/SKILL.md
+   ls ~/.claude/plugins/cache/wok/wok-refine-rule/*/skills/wok-refine-rule/SKILL.md
    ```
 
 2. 使用 Read 工具读取输出的路径
