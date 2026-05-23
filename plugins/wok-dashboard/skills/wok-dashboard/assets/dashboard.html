@@ -9,8 +9,7 @@
 <body>
   <div id="app">
     <header>
-      <h1>wok — {{SYSTEM_NAME}}</h1>
-      <span class="approval-badge" id="approval-badge" style="display:none"></span>
+      <h1>wok — {{SYSTEM_NAME}} <span class="approval-badge" id="approval-badge" style="display:none"></span></h1>
       <span class="edition">Pipeline Dashboard</span>
     </header>
 
@@ -30,19 +29,20 @@
         <input type="file" id="dir-input" webkitdirectory multiple style="display:none">
       </div>
 
-      <div id="tab-overview" class="tab-content"></div>
-      <div id="tab-requirements" class="tab-content md-content"></div>
-      <div id="tab-design" class="tab-content md-content"></div>
-      <div id="tab-check" class="tab-content md-content"></div>
-      <div id="tab-execution" class="tab-content md-content"></div>
+      <div id="tab-overview" class="tab-content" style="--bg:#FAF8F3;background:#FAF8F3"></div>
+      <div id="tab-requirements" class="tab-content md-content" style="--bg:#FAF8F3;background:#FAF8F3"></div>
+      <div id="tab-design" class="tab-content md-content" style="--bg:#FAF8F3;background:#FAF8F3"></div>
+      <div id="tab-check" class="tab-content md-content" style="--bg:#FAF8F3;background:#FAF8F3"></div>
+      <div id="tab-execution" class="tab-content md-content" style="--bg:#FAF8F3;background:#FAF8F3"></div>
     </main>
   </div>
 
-  <button class="notes-toggle" id="notes-toggle-btn" title="备注面板">&#x270D;</button>
+  <button class="notes-toggle" id="notes-toggle-btn" title="备注面板">&#x1F4DD;</button>
   <div id="notes-panel">
     <div class="notes-header">
+      <button class="btn-sm btn-danger" id="clear-all-btn">清空全部</button>
       <h3>备注</h3>
-      <button class="btn-sm" id="copy-all-btn">复制全部</button>
+      <button class="btn-sm btn-info" id="copy-all-btn">复制全部</button>
     </div>
     <div class="notes-list" id="notes-list"></div>
     <div class="notes-input">

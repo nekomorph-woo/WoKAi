@@ -24,6 +24,7 @@
   const noteTextarea = $('#note-textarea');
   const addNoteBtn = $('#add-note-btn');
   const copyAllBtn = $('#copy-all-btn');
+  const clearAllBtn = $('#clear-all-btn');
   const refPopover = $('#ref-popover');
 
   // ── markdown-it setup ──
@@ -266,11 +267,11 @@
     const badge = document.getElementById('approval-badge');
     if (!badge) return;
     if (draftCount === 0 && totalCount > 0) {
-      badge.textContent = '✓ all confirmed';
+      badge.textContent = '✓ 全部已确认';
       badge.className = 'approval-badge all-done';
       badge.style.display = '';
     } else if (draftCount > 0) {
-      badge.textContent = `⬤ ${draftCount} pending`;
+      badge.textContent = `⬤ ${draftCount} 个文件待确认`;
       badge.className = 'approval-badge';
       badge.style.display = '';
     } else {
@@ -284,23 +285,37 @@
     let html = '';
 
     // Pipeline status — each phase shows approved ratio of its documents
+    // Execution phase uses step completion + document status
+    const planKey = findFile('_plan.md');
+    const planParsed = planKey ? state.parsed.get(planKey) : null;
+    const planSteps = planParsed ? extractSteps(planParsed.body) : [];
+    const planStatus = planParsed?.frontmatter?.status === 'approved' ? 1 : 0;
+
     const pipelinePhases = [
       { name: 'define', label: '需求', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
       { name: 'registry', label: '设计', test: (n) => n.includes('modules/') },
-      { name: 'check', label: '校验', test: (n) => n.endsWith('/_check.md') },
-      { name: 'plan', label: '执行', test: (n) => n.endsWith('/_plan.md') },
+      { name: 'check', label: '校验', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
+      { name: 'plan', label: '执行', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
     ];
 
     html += '<div class="overview-section"><h2>Pipeline 状态</h2><div class="pipeline-progress">';
     for (const phase of pipelinePhases) {
-      const phaseFiles = [];
-      for (const [name, parsed] of state.parsed) {
-        if (phase.test(name) && parsed.frontmatter) phaseFiles.push(parsed.frontmatter.status);
+      let total, approved, pct;
+      if (phase.name === 'plan' && planParsed) {
+        const stepsDone = planSteps.filter(s => s.done).length;
+        total = planSteps.length + 1;
+        approved = stepsDone + planStatus;
+        pct = Math.round((approved / total) * 100);
+      } else {
+        const phaseFiles = [];
+        for (const [name, parsed] of state.parsed) {
+          if (phase.test(name) && parsed.frontmatter) phaseFiles.push(parsed.frontmatter.status);
+        }
+        total = phaseFiles.length;
+        approved = phaseFiles.filter(s => s === 'approved').length;
+        pct = total ? Math.round((approved / total) * 100) : 0;
       }
-      const total = phaseFiles.length;
-      const approved = phaseFiles.filter(s => s === 'approved').length;
-      const pct = total ? Math.round((approved / total) * 100) : 0;
-      html += `<div class="pipeline-phase" title="${phase.label}: ${approved}/${total} approved">`;
+      html += `<div class="pipeline-phase" title="${phase.label}: ${approved}/${total}">`;
       html += `<div class="pipeline-step"><div class="pipeline-step-fill" style="width:${pct}%"></div></div>`;
       html += `<span class="pipeline-step-title">${phase.label}</span>`;
       html += `</div>`;
@@ -321,8 +336,8 @@
     const docGroups = [
       { title: '需求文档', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
       { title: '模块设计', test: (n) => n.includes('modules/') },
-      { title: '校验文档', test: (n) => n.endsWith('/_check.md') },
-      { title: '执行文档', test: (n) => n.endsWith('/_plan.md') },
+      { title: '校验文档', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
+      { title: '执行文档', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
     ];
     const uncategorized = { title: '其他', items: [] };
     const groups = docGroups.map(g => ({ ...g, items: [] }));
@@ -381,13 +396,29 @@
     }
 
     html += '<div class="overview-section"><h2>语义标记</h2>';
+    html += '<div class="marker-legend">';
+    html += '<span class="marker-tag legend decision">DEC 决策</span>';
+    html += '<span class="marker-tag legend open">OPEN 待处理</span>';
+    html += '<span class="marker-tag legend action">ACT 修复动作</span>';
+    html += '</div>';
     if (allMarkers.length) {
-      html += '<div class="marker-tags">';
-      for (const m of allMarkers) {
-        const cls = m.type === 'OPEN' ? 'open' : m.type === 'ACTION' ? 'action' : 'decision';
-        html += `<span class="marker-tag ${cls}" data-source-file="${esc(m.file)}" data-source-line="${m.line}" title="${esc(m.title)}">${m.type.slice(0,3)} ${esc(m.title)}</span>`;
+      const markerGroups = [
+        { cls: 'decision', label: '决策', test: (m) => m.type !== 'OPEN' && m.type !== 'ACTION' },
+        { cls: 'open', label: '待处理', test: (m) => m.type === 'OPEN' },
+        { cls: 'action', label: '修复动作', test: (m) => m.type === 'ACTION' },
+      ];
+      for (const g of markerGroups) {
+        const items = allMarkers.filter(g.test);
+        html += `<div class="marker-group"><span class="marker-group-label">${g.label}</span><div class="marker-tags">`;
+        if (items.length) {
+          for (const m of items) {
+            html += `<span class="marker-tag ${g.cls}" data-source-file="${esc(m.file)}" data-source-line="${m.line}" title="${esc(m.title)}">${m.type.slice(0,3)} ${esc(m.title)}</span>`;
+          }
+        } else {
+          html += '<span class="marker-empty">无</span>';
+        }
+        html += '</div></div>';
       }
-      html += '</div>';
     } else {
       html += '<span style="color:#737373;font-size:13px;">无语义标记</span>';
     }
@@ -407,9 +438,9 @@
         } else if (file.startsWith('modules/')) {
           state.activeModule = null;
           switchTab('design');
-        } else if (file.endsWith('/_check.md')) {
+        } else if (file === '_check.md' || file.endsWith('/_check.md')) {
           switchTab('check');
-        } else if (file.endsWith('/_plan.md')) {
+        } else if (file === '_plan.md' || file.endsWith('/_plan.md')) {
           switchTab('execution');
         } else {
           switchTab('requirements');
@@ -454,6 +485,10 @@
         } else if (file.includes('modules/')) {
           state.activeModule = null;
           switchTab('design');
+        } else if (file === '_check.md' || file.endsWith('/_check.md')) {
+          switchTab('check');
+        } else if (file === '_plan.md' || file.endsWith('/_plan.md')) {
+          switchTab('execution');
         } else {
           switchTab('requirements');
         }
@@ -569,6 +604,51 @@
   }
 
   // ── Check Tab ──
+  function parseCheckBlocks(body) {
+    const lines = body.split('\n');
+    const blocks = [];
+    let cur = { type: 'static', lines: [] };
+
+    function flush() {
+      const text = cur.lines.join('\n').trim();
+      if (text) blocks.push({ type: cur.type, severity: cur.severity, text });
+      cur = { type: 'static', lines: [] };
+    }
+
+    for (const line of lines) {
+      // Finding: line starts with severity emoji
+      if (/^[🔴🟡🟢]/.test(line)) {
+        const severity = line.includes('🔴') ? 'red' : line.includes('🟡') ? 'yellow' : 'green';
+        flush();
+        cur = { type: 'severity', severity, lines: [line] };
+        continue;
+      }
+      // [OPEN] action item header — #### level stays in current block, ### level starts new block
+      if (/^#{2,4}\s+\[OPEN\]/.test(line)) {
+        const level = (line.match(/^(#+)/) || [''])[0].length;
+        const severity = line.includes('🔴') ? 'red' : line.includes('🟡') ? 'yellow' : 'green';
+        if (level >= 4 && cur.type === 'severity') {
+          // #### [OPEN] under a finding — append to current block
+          cur.lines.push(line);
+        } else {
+          // ### [OPEN] (standalone section) — new block
+          flush();
+          cur = { type: 'severity', severity, lines: [line] };
+        }
+        continue;
+      }
+      // ## or ### section header ends current severity block
+      if (/^#{1,3}\s+(?!\[)/.test(line) && cur.type === 'severity') {
+        flush();
+        cur = { type: 'static', lines: [line] };
+        continue;
+      }
+      cur.lines.push(line);
+    }
+    flush();
+    return blocks;
+  }
+
   function renderCheck() {
     const el = $('#tab-check');
     const checkKey = findFile('_check.md');
@@ -577,16 +657,28 @@
       return;
     }
     const check = state.parsed.get(checkKey);
+    const blocks = parseCheckBlocks(check.body);
 
-    let html = '<div class="severity-filters">';
+    let html = renderFileStatusBar(checkKey);
+    html += '<div class="severity-filters">';
     html += '<button class="severity-btn active" data-severity="all">全部</button>';
-    html += '<button class="severity-btn" data-severity="red">阻塞</button>';
-    html += '<button class="severity-btn" data-severity="yellow">建议</button>';
-    html += '<button class="severity-btn" data-severity="green">通过</button>';
+    html += '<button class="severity-btn" data-severity="red">🔴 阻塞</button>';
+    html += '<button class="severity-btn" data-severity="yellow">🟡 建议</button>';
+    html += '<button class="severity-btn" data-severity="green">🟢 通过</button>';
     html += '</div>';
-    html += '<div class="check-content">' + renderMd(check.body, checkKey) + '</div>';
+    html += '<div class="check-content">';
+    for (const block of blocks) {
+      const rendered = renderMd(block.text, checkKey);
+      if (block.type === 'severity') {
+        html += `<div class="severity-item" data-severity="${block.severity}">${rendered}</div>`;
+      } else {
+        html += rendered;
+      }
+    }
+    html += '</div>';
 
     el.innerHTML = html;
+    bindStatusToggles(el);
 
     el.querySelectorAll('.severity-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -623,38 +715,39 @@
 
     const steps = extractSteps(plan.body);
     const doneCount = steps.filter(s => s.done).length;
-    const blockedCount = steps.filter(s => s.blocked).length;
     const totalCount = steps.length;
     const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
 
     let html = '';
+
+    // Status bar
+    html += renderFileStatusBar(planKey);
 
     // Progress bar
     html += '<div class="exec-progress-section">';
     html += '<div class="exec-progress-bar"><div class="exec-progress-fill" style="width:' + pct + '%"></div></div>';
     html += '<div class="exec-progress-meta">';
     html += `<span class="exec-stat done">${doneCount} 完成</span>`;
-    if (blockedCount) html += `<span class="exec-stat blocked">${blockedCount} 阻塞</span>`;
-    html += `<span class="exec-stat pending">${totalCount - doneCount - blockedCount} 待执行</span>`;
+    html += `<span class="exec-stat pending">${totalCount - doneCount} 待执行</span>`;
     html += `<span class="exec-stat pct">${pct}%</span>`;
     html += '</div>';
 
     // Step status chips
     html += '<div class="exec-step-chips">';
     for (const step of steps) {
-      const cls = step.done ? 'done' : step.blocked ? 'blocked' : 'pending';
-      const icon = step.done ? '✓' : step.blocked ? '!' : '';
-      html += `<span class="exec-chip ${cls}" title="${esc(step.title)}">${icon} Step ${step.num}</span>`;
+      const cls = step.done ? 'done' : 'pending';
+      html += `<span class="exec-chip ${cls}" data-step="${step.num}" title="${esc(step.title)}">${step.done ? '✓ ' : ''}Step ${step.num}</span>`;
     }
+    html += '</div>';
+    html += '<div class="exec-progress-actions">';
+    html += '<button class="btn-sm" id="exec-refresh-btn">刷新</button>';
     html += '</div></div>';
-
-    // Refresh button
-    html += '<button class="btn-sm refresh-btn" id="exec-refresh-btn">刷新</button>';
 
     // Render markdown body
     html += '<div class="plan-content">' + renderMd(plan.body, planKey) + '</div>';
 
     el.innerHTML = html;
+    bindStatusToggles(el);
 
     // Color step headings based on status
     el.querySelectorAll('.plan-content h3').forEach(h3 => {
@@ -663,12 +756,29 @@
       const stepNum = parseInt(stepMatch[1]);
       const step = steps.find(s => s.num === stepNum);
       if (!step) return;
+      // Wrap step content in a step-block div for visual separation
+      const wrapper = document.createElement('div');
+      wrapper.className = 'step-block' + (step.done ? ' step-done' : '');
+      wrapper.id = 'step-' + stepNum;
+      while (h3.nextSibling && !(h3.nextSibling.nodeName === 'H3' && h3.nextSibling.textContent.match(/^Step \d+:/))) {
+        wrapper.appendChild(h3.nextSibling);
+      }
+      h3.parentNode.insertBefore(wrapper, h3.nextSibling);
+      wrapper.insertBefore(h3, wrapper.firstChild);
+
       if (step.done) {
         h3.style.color = '#525252';
         h3.style.textDecoration = 'line-through';
-      } else if (step.blocked) {
-        h3.style.color = 'var(--accent)';
       }
+    });
+
+    // Chip click -> scroll to step
+    el.querySelectorAll('.exec-chip[data-step]').forEach(chip => {
+      chip.style.cursor = 'pointer';
+      chip.addEventListener('click', () => {
+        const target = el.querySelector('#step-' + chip.dataset.step);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     });
 
     // Refresh button
@@ -688,13 +798,8 @@
         currentStep = {
           num: parseInt(match[1]),
           done: match[2] === 'x',
-          blocked: false,
           title: match[3],
         };
-        continue;
-      }
-      if (currentStep && line.match(/^>\s*⚠️/)) {
-        currentStep.blocked = true;
       }
     }
     if (currentStep) steps.push(currentStep);
@@ -732,17 +837,6 @@
       /^-\s+\[ACTION\]\s+(.+)$/gm,
       (match, title) => {
         return `<div class="marker action"><span class="checkbox">☐</span> ${esc(title)}</div>`;
-      }
-    );
-
-    // Wrap severity items for check tab filtering
-    processed = processed.replace(
-      /^(-\s*\[.\]\s*(?:🔴|🟡|🟢)\s*.+)$/gm,
-      (match) => {
-        let severity = 'green';
-        if (match.includes('🔴')) severity = 'red';
-        else if (match.includes('🟡')) severity = 'yellow';
-        return `<div class="severity-item" data-severity="${severity}">${match}</div>`;
       }
     );
 
@@ -908,6 +1002,16 @@
     });
   }
 
+  async function clearAllNotes() {
+    if (!state.notes.length) return;
+    if (!confirm('确认清空全部 ' + state.notes.length + ' 条备注？')) return;
+    for (const note of state.notes) {
+      try { await fetch(SERVER_URL + '/api/notes/' + note.id, { method: 'DELETE' }); } catch {}
+    }
+    state.notes = [];
+    renderNotes();
+  }
+
   // ── Ref popover (text selection) ──
   let pendingRefs = [];
   let currentSelection = null;
@@ -916,8 +1020,8 @@
   function fileToTab(file) {
     if (file.endsWith('_define.md') || file.endsWith('_roadmap.md')) return 'requirements';
     if (file.includes('modules/')) return 'design';
-    if (file.endsWith('_check.md')) return 'check';
-    if (file.endsWith('_plan.md')) return 'execution';
+    if (file === '_check.md' || file.endsWith('/_check.md')) return 'check';
+    if (file === '_plan.md' || file.endsWith('/_plan.md')) return 'execution';
     return 'requirements';
   }
 
@@ -1093,6 +1197,7 @@
 
     // Copy all notes
     copyAllBtn.addEventListener('click', copyAllNotes);
+    clearAllBtn.addEventListener('click', clearAllNotes);
   }
 
   if (document.readyState === 'loading') {
