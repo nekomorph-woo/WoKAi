@@ -1,6 +1,6 @@
 ---
-name: fast-commit
-description: 规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、冲！、或提到 "fast-commit" / "commit"。
+name: zap
+description: 规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、冲！、或提到 "zap" / "commit"。
 ---
 
 pipeline:
@@ -10,7 +10,7 @@ pipeline:
   output: none
   adaptive: false
 
-# Ooops Up
+# Zap
 
 规范化 commit message 格式，支持关联 GitHub/GitLab issue 自动关闭。
 

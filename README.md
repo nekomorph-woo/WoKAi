@@ -19,7 +19,7 @@ wok-plan             翻译为编码步骤
        │
 wok-implement        TDD 驱动开发
        │
-fast-commit          规范化提交
+zap                  规范化提交
 ```
 
 每个技能可独立使用，不需要走完整管道。
@@ -37,7 +37,7 @@ fast-commit          规范化提交
 | `wok-design-review` | 交叉验证模块设计的一致性和完整性 |
 | `wok-plan` | 将模块设计翻译为编码执行计划 |
 | `wok-implement` | TDD 驱动开发（RED-GREEN-REFACTOR） |
-| `fast-commit` | 规范化 commit message，关联 issue |
+| `zap` | 规范化 commit message，关联 issue |
 
 ### 辅助技能
 

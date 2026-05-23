@@ -1,6 +1,6 @@
 ---
 name: wok-make-interface
-description: 生成多个差异显著的模块接口设计方案。Use when 用户要求设计 API、探索接口选项、对比模块形态、或提到 "plate" / "摆盘" / "设计接口" / "wok-make-interface"。
+description: 生成多个差异显著的模块接口设计方案。Use when 用户要求设计 API、探索接口选项、对比模块形态、或提到 "wok-make-interface" / "设计接口"。
 pipeline:
   upstream: [wok-design]
   downstream: []

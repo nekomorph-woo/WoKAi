@@ -1,6 +1,6 @@
 ---
 name: wok-design
-description: 将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 "modularize" / "模块拆分" / "模块设计" / "wok-design"。
+description: 将需求拆分为模块并迭代设计，输出模块接口契约和设计决策。Use when 用户要求拆分模块、设计架构、模块化需求，或提到 "wok-design" / "模块拆分" / "模块设计"。
 pipeline:
   upstream: [wok-define]
   downstream: [wok-design-review]
@@ -9,7 +9,7 @@ pipeline:
   adaptive: true
 ---
 
-# 备料
+# 模块设计
 
 将需求拆分为模块，迭代设计接口和决策。产出模块注册表 + 各模块设计文档。
 

@@ -1,6 +1,6 @@
 ---
 name: wok-idea
-description: 消化需求描述并设计版本化路线图。处理从零散想法到完整 PRD 的各种输入规模，通过发散和侦察双轨探索，收敛为精选 feature 列表和分阶段 roadmap。Use when 用户缺乏功能想法、需要灵感、有大段需求/PRD 需要消化、或提到 "forage" / "觅食" / "roadmap" / "功能规划" / "路线图" / "wok-idea"。
+description: 消化需求描述并设计版本化路线图。处理从零散想法到完整 PRD 的各种输入规模，通过发散和侦察双轨探索，收敛为精选 feature 列表和分阶段 roadmap。Use when 用户缺乏功能想法、需要灵感、有大段需求/PRD 需要消化、或提到 "wok-idea" / "roadmap" / "功能规划" / "路线图"。
 pipeline:
   upstream: [wok-findings]
   downstream: [wok-define]
@@ -9,7 +9,7 @@ pipeline:
   adaptive: false
 ---
 
-# 觅食
+# 功能路线图设计
 
 消化需求描述，探索功能灵感，收敛为版本化路线图。不定义接口或实现设计——那是下游技能的职责。
 
@@ -106,7 +106,7 @@ pipeline:
 | 风险可控 | 每个阶段的复杂度均衡 |
 | 依赖排序 | 有前置依赖的排在后面 |
 
-**phase 粒度约束**：每个 phase 控制在 1-3 个模块，确保下游管道（define → cook）单次产出在人类可审阅范围内。
+**phase 粒度约束**：每个 phase 控制在 1-3 个模块，确保下游管道（wok-define → wok-implement）单次产出在人类可审阅范围内。
 
 | 指标 | 控制目标 |
 |------|----------|
@@ -197,17 +197,17 @@ changed: 初始版本
 
 ## 迭代使用
 
-forage 产出多 phase 路线图后，每个 phase 独立走下游管道：
+本技能产出多 phase 路线图后，每个 phase 独立走下游管道：
 
 ```
-Phase 1: define → prepare → season → recipe → cook
+Phase 1: wok-define → wok-design → wok-design-review → wok-plan → wok-implement
                                     ↓ （代码库已进化）
-Phase 2: define（已知 Phase 1 约束）→ prepare（adaptive: true）→ season → recipe → cook
+Phase 2: wok-define（已知 Phase 1 约束）→ wok-design（adaptive: true）→ wok-design-review → wok-plan → wok-implement
 ```
 
 - **wok-findings** 仅在 Phase 1 首次执行（探索代码库现状）
-- **后续 phase** 的 prepare 使用 adaptive 模式，基于已有代码库和设计存量做增量设计
-- 每个 phase 的 season 交叉验证仅覆盖该 phase 的模块，复杂度可控
+- **后续 phase** 的 wok-design 使用 adaptive 模式，基于已有代码库和设计存量做增量设计
+- 每个 phase 的 wok-design-review 交叉验证仅覆盖该 phase 的模块，复杂度可控
 
 ## 约束
 

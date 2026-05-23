@@ -1,6 +1,6 @@
 ---
 name: wok-findings
-description: 探索现有代码的设计约束、架构模式和潜在问题，为后续设计提供现状基线。Use when 用户要求探索代码库、理解现有架构、分析设计约束，或提到 "pick" / "挑" / "探索代码" / "wok-findings"。
+description: 探索现有代码的设计约束、架构模式和潜在问题，为后续设计提供现状基线。Use when 用户要求探索代码库、理解现有架构、分析设计约束，或提到 "wok-findings" / "探索代码"。
 pipeline:
   upstream: []
   downstream: [wok-define]
@@ -9,7 +9,7 @@ pipeline:
   adaptive: false
 ---
 
-# 挑食材
+# 代码探索
 
 探索现有代码的设计约束和质量现状，通过对话输出发现，大探索时自动持久化为 `_findings.md`。
 

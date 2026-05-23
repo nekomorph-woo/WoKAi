@@ -1,6 +1,6 @@
 ---
 name: wok-implement
-description: 测试驱动开发，采用垂直切片的 RED-GREEN-REFACTOR 循环。Use when 用户要求使用 TDD 开发功能或修复 bug、提到 "cook" / "按谱烹饪" / "red-green-refactor" / "测试先行" / "TDD"。
+description: 测试驱动开发，采用垂直切片的 RED-GREEN-REFACTOR 循环。Use when 用户要求使用 TDD 开发功能或修复 bug、提到 "wok-implement" / "red-green-refactor" / "测试先行" / "TDD"。
 pipeline:
   upstream: [wok-issue, wok-plan, wok-define]
   downstream: []
@@ -158,7 +158,7 @@ GREEN: 使测试通过的最小代码 → 通过
 
 ### 6. 会话模式萃取（可选，仅当所有 step 完成后）
 
-当上游 `_plan.md` 存在且所有 step 均已完成（全部 `[x]`），或独立 cook 会话结束时：
+当上游 `_plan.md` 存在且所有 step 均已完成（全部 `[x]`），或独立编码会话结束时：
 
 1. **回顾本次会话**，识别重复出现 3+ 次的实现模式
 2. **应用严格质量门**（5 项准则全部满足）筛选候选：

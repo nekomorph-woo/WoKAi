@@ -1,6 +1,6 @@
 ---
 name: wok-issue
-description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 "diagnose" / "排查" / "诊断" / "wok-issue"。
+description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 "wok-issue" / "排查" / "诊断"。
 pipeline:
   upstream: []
   downstream: [wok-implement, wok-design-review]
@@ -109,7 +109,7 @@ pipeline:
 |------|------|----------|
 | 修复 ≤ 3 个文件，无架构变更 | 简单修复 | 直接创建 Issue，后续 `/wok-implement` |
 | 修复 > 3 个文件，或涉及模块边界 | 需要设计 | 创建 Issue 后建议用户走 `wok-define` → `wok-design` → `wok-plan` → `/wok-implement` |
-| 根因指向架构缺陷 | 需要重构 | 创建 Issue 后建议用户先走烹饪管线 `wok-define` → `wok-design` → `wok-plan` → `/wok-implement` |
+| 根因指向架构缺陷 | 需要重构 | 创建 Issue 后建议用户先走设计管线 `wok-define` → `wok-design` → `wok-plan` → `/wok-implement` |
 
 简单修复路径直接进入步骤 6。需要设计的路径创建 Issue 时在 Issue 体中标注。
 

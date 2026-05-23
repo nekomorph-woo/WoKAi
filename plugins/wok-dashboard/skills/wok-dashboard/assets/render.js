@@ -234,7 +234,7 @@
     if (findingsKey) {
       const findings = state.parsed.get(findingsKey);
       html += '<div class="overview-section"><h2>代码探索基线</h2>';
-      html += '<details class="findings-details"><summary class="findings-summary">pick-the-finding 探索结果</summary>';
+      html += '<details class="findings-details"><summary class="findings-summary">wok-findings 探索结果</summary>';
       html += '<div class="findings-body">' + renderMd(findings.body, findingsKey) + '</div>';
       html += '</details></div>';
     }

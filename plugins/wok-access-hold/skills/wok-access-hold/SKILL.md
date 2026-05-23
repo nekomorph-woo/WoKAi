@@ -1,6 +1,6 @@
 ---
 name: wok-access-hold
-description: 管理 Claude Code 文件排除规则，同步维护所有工具层的 deny 配置。Use when 用户要求保护敏感文件、添加/移除 deny 规则、排除 .env/secrets 等文件、或提到 "seal" / "文件保护" / "排除文件" / "wok-access-hold" / "锁食材库"。
+description: 管理 Claude Code 文件排除规则，同步维护所有工具层的 deny 配置。Use when 用户要求保护敏感文件、添加/移除 deny 规则、排除 .env/secrets 等文件、或提到 "wok-access-hold" / "文件保护" / "排除文件"。
 ---
 
 pipeline:

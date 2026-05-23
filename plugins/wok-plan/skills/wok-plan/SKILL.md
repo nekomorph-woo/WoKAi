@@ -1,6 +1,6 @@
 ---
 name: wok-plan
-description: 将模块设计翻译为编码执行计划，定义文件顺序、集成点和每步验证标准。Use when 用户要求制定开发计划、编写执行步骤、拆分编码任务，或提到 "devplan" / "开发计划" / "执行计划" / "wok-plan"。
+description: 将模块设计翻译为编码执行计划，定义文件顺序、集成点和每步验证标准。Use when 用户要求制定开发计划、编写执行步骤、拆分编码任务，或提到 "wok-plan" / "开发计划" / "执行计划"。
 pipeline:
   upstream: [wok-design-review]
   downstream: []
@@ -9,7 +9,7 @@ pipeline:
   adaptive: true
 ---
 
-# 写菜谱
+# 执行计划
 
 将模块设计翻译为可执行的编码步骤，与 TDD 衔接。
 

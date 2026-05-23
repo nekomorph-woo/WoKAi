@@ -1,6 +1,6 @@
 ---
 name: wok-refine-rule
-description: 管理 .claude/rules/ 配置文件：初始化模板、五维度评估规则质量、改进规则、审计规则间冲突。Use when 用户要求初始化规则、评估规则、改进规则、审计规则，或提到 "rules" / "对话风格" / "wok-refine-rule" / "磨刀"。
+description: 管理 .claude/rules/ 配置文件：初始化模板、五维度评估规则质量、改进规则、审计规则间冲突。Use when 用户要求初始化规则、评估规则、改进规则、审计规则，或提到 "rules" / "对话风格" / "wok-refine-rule"。
 pipeline:
   upstream: [wok-distill-session]
   downstream: []

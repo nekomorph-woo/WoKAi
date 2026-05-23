@@ -1,6 +1,6 @@
 ---
 name: wok-design-review
-description: 交叉验证模块设计的一致性和完整性，检查接口对齐、依赖方向和跨模块遗漏。Use when 用户要求交叉验证、检查设计一致性、审查模块设计，或提到 "season" / "调味" / "交叉验证" / "wok-design-review"。
+description: 交叉验证模块设计的一致性和完整性，检查接口对齐、依赖方向和跨模块遗漏。Use when 用户要求交叉验证、检查设计一致性、审查模块设计，或提到 "wok-design-review" / "交叉验证"。
 pipeline:
   upstream: [wok-design]
   downstream: [wok-plan]
@@ -9,7 +9,7 @@ pipeline:
   adaptive: true
 ---
 
-# 调味检查
+# 设计交叉验证
 
 对模块设计做 3 项聚焦检查，不产出长篇审阅报告。发现问题直接列出，需要人工决策的标记为阻塞项。
 
