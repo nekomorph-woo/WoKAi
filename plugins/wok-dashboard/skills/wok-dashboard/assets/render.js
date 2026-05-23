@@ -2,7 +2,7 @@
   'use strict';
 
   const SYSTEM_NAME = '{{SYSTEM_NAME}}';
-  const STORAGE_KEY = 'wok-notes-' + SYSTEM_NAME;
+  const SERVER_URL = '{{SERVER_URL}}';
 
   // ── State ──
   const state = {
@@ -11,7 +11,6 @@
     activeTab: 'overview',
     notes: [],
     activeModule: null,
-    dirHandle: null,       // File System Access API handle for refresh
   };
 
   // ── DOM refs ──
@@ -19,13 +18,10 @@
   const $$ = (s) => document.querySelectorAll(s);
 
   const welcome = $('#welcome');
-  const openDirBtn = $('#open-dir-btn');
-  const dirInput = $('#dir-input');
   const notesPanel = $('#notes-panel');
   const notesToggleBtn = $('#notes-toggle-btn');
   const notesList = $('#notes-list');
   const noteTextarea = $('#note-textarea');
-  const noteType = $('#note-type');
   const addNoteBtn = $('#add-note-btn');
   const copyAllBtn = $('#copy-all-btn');
   const refPopover = $('#ref-popover');
@@ -39,74 +35,80 @@
       typographer: false,
     });
 
-    // Source line tracking: inject data-source-file and data-source-line
-    const renderer = md.renderer;
-    const origRule = renderer.rules.paragraph_open;
-    renderer.rules.paragraph_open = function (tokens, idx, options, env) {
-      const line = tokens[idx].map && tokens[idx].map[0];
-      if (line != null && env && env.sourceFile) {
-        tokens[idx].attrSet('data-source-file', env.sourceFile);
-        tokens[idx].attrSet('data-source-line', line);
-      }
-      return origRule
-        ? origRule(tokens, idx, options, env, renderer)
-        : renderer.renderToken(tokens, idx, options);
-    };
-  }
-
-  // ── File Reading ──
-  async function openDirectory() {
-    if ('showDirectoryPicker' in window) {
-      try {
-        const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
-        state.dirHandle = dirHandle;
-        await readDirectoryHandle(dirHandle);
-      } catch (e) {
-        if (e.name !== 'AbortError') {
-          console.warn('File System Access API failed, falling back:', e);
-          dirInput.click();
-        }
-      }
-    } else {
-      dirInput.click();
-    }
-  }
-
-  async function readDirectoryHandle(dirHandle) {
-    const files = [];
-    for await (const entry of dirHandle.values()) {
-      if (entry.kind === 'directory') {
-        // Recurse into phase subdirectories (e.g. p1-xxx/)
-        for await (const sub of entry.values()) {
-          if (sub.kind === 'file' && sub.name.endsWith('.md')) {
-            const file = await sub.getFile();
-            files.push(file);
+    // Recursively inject source attrs on ALL block-level tokens
+    md.core.ruler.push('inject_source_attrs', (state) => {
+      const sourceFile = state.env && state.env.sourceFile;
+      if (!sourceFile) return;
+      function walk(tokens) {
+        for (const token of tokens) {
+          const injectable = (token.nesting === 1 ||
+                              token.type === 'fence' ||
+                              token.type === 'code_block') && token.map;
+          if (injectable) {
+            token.attrSet('data-source-file', sourceFile);
+            token.attrSet('data-source-line', token.map[0]);
           }
+          if (token.children) walk(token.children);
         }
-      } else if (entry.kind === 'file' && entry.name.endsWith('.md')) {
-        // System-level files (e.g. _roadmap.md)
-        const file = await entry.getFile();
-        files.push(file);
       }
-    }
-    await loadFiles(files);
+      walk(state.tokens);
+    });
   }
 
-  async function loadFiles(fileList) {
+  // ── File Reading (HTTP fetch) ──
+  async function fetchAndLoadFiles() {
+    try {
+      const base = SERVER_URL || '';
+      const resp = await fetch(base + '/api/files');
+      if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+      const filePaths = await resp.json();
+
+      state.files.clear();
+      state.parsed.clear();
+
+      for (const path of filePaths) {
+        const fileResp = await fetch(base + '/' + encodeURIComponent(path));
+        if (!fileResp.ok) continue;
+        const text = await fileResp.text();
+        state.files.set(path, text);
+        state.parsed.set(path, parseMarkdown(text, path));
+      }
+      onFilesLoaded();
+    } catch (e) {
+      console.error('Failed to load files:', e);
+      if (location.protocol === 'file:') {
+        // file:// 协议回退到目录选择器
+        const openDirBtn = document.getElementById('open-dir-btn');
+        const dirInput = document.getElementById('dir-input');
+        if (openDirBtn && dirInput) {
+          welcome.querySelector('p').textContent = 'HTTP server 不可用，请手动选择 feature 目录。';
+          openDirBtn.style.display = '';
+          openDirBtn.addEventListener('click', () => dirInput.click());
+          dirInput.addEventListener('change', (ev) => {
+            if (ev.target.files.length) loadFilesFromInput(ev.target.files);
+          });
+        }
+      } else {
+        welcome.innerHTML = `
+          <h2>连接失败</h2>
+          <p style="font-family:var(--font-mono);font-size:12px;color:#737373;">${esc(e.message)}</p>
+          <button class="btn-primary" onclick="location.reload()">重试</button>
+        `;
+      }
+    }
+  }
+
+  // Fallback for file:// protocol
+  async function loadFilesFromInput(fileList) {
     const files = Array.from(fileList).filter(f => f.name.endsWith('.md'));
     for (const file of files) {
       const text = await file.text();
-      // Use relative path from webkitRelativePath as key (includes phase dir)
       const key = file.webkitRelativePath || file.name;
       state.files.set(key, text);
       state.parsed.set(key, parseMarkdown(text, key));
     }
     onFilesLoaded();
   }
-
-  dirInput.addEventListener('change', (e) => {
-    if (e.target.files.length) loadFiles(e.target.files);
-  });
 
   // ── Parsing ──
   function parseMarkdown(text, fileName) {
@@ -190,7 +192,7 @@
 
   function onFilesLoaded() {
     welcome.style.display = 'none';
-    renderTab(state.activeTab);
+    switchTab(state.activeTab);
   }
 
   function renderTab(tab) {
@@ -473,10 +475,8 @@
     });
 
     // Refresh button
-    el.querySelector('#exec-refresh-btn')?.addEventListener('click', async () => {
-      if (state.dirHandle) {
-        await readDirectoryHandle(state.dirHandle);
-      }
+    el.querySelector('#exec-refresh-btn')?.addEventListener('click', () => {
+      fetchAndLoadFiles();
     });
   }
 
@@ -550,22 +550,63 @@
     );
 
     const html = md.render(processed, env);
-    return html;
+    return `<div data-source-file="${esc(sourceFile)}">${html}</div>`;
   }
+
+  let selectedNoteType = 'decision';
 
   // ── Notes Panel ──
-  function loadNotes() {
+  async function loadNotes() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      state.notes = stored ? JSON.parse(stored) : [];
+      const resp = await fetch(SERVER_URL + '/api/notes');
+      if (!resp.ok) return;
+      state.notes = await resp.json();
+      renderNotes();
     } catch {
       state.notes = [];
+      renderNotes();
     }
-    renderNotes();
   }
 
-  function saveNotes() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.notes));
+  async function saveNote(note) {
+    try {
+      const resp = await fetch(SERVER_URL + '/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(note),
+      });
+      if (resp.ok) {
+        const created = await resp.json();
+        state.notes.unshift(created);
+        clearAllHighlights();
+        renderNotes();
+      }
+    } catch (e) {
+      console.error('Failed to save note:', e);
+    }
+  }
+
+  async function deleteNoteRemote(id) {
+    try {
+      await fetch(SERVER_URL + '/api/notes/' + id, { method: 'DELETE' });
+      state.notes = state.notes.filter(n => n.id !== id);
+      renderNotes();
+    } catch (e) {
+      console.error('Failed to delete note:', e);
+    }
+  }
+
+  async function deleteNoteRef(noteId, refIdx) {
+    try {
+      await fetch(SERVER_URL + '/api/notes/' + noteId + '/refs/' + refIdx, { method: 'DELETE' });
+      const note = state.notes.find(n => n.id === noteId);
+      if (note && note.refs) {
+        note.refs.splice(refIdx, 1);
+      }
+      renderNotes();
+    } catch (e) {
+      console.error('Failed to delete ref:', e);
+    }
   }
 
   function renderNotes() {
@@ -573,15 +614,28 @@
       notesList.innerHTML = '<p style="color:#737373;font-size:12px;text-align:center;padding:24px;">暂无备注</p>';
       return;
     }
+    const typeLabel = { decision: '决策', question: '疑问', suggestion: '建议' };
     let html = '';
     for (const note of state.notes) {
-      html += `<div class="note-card">`;
-      html += `<div class="note-type">[${noteType || 'decision'}] ${note.type}</div>`;
+      html += `<div class="note-card" data-id="${note.id}">`;
+      html += `<div class="note-card-header">`;
+      html += `<span class="note-type">${typeLabel[note.type] || note.type}</span>`;
+      html += `<div class="note-card-actions">`;
+      html += `<button class="note-action-btn" data-action="copy" data-id="${note.id}" title="复制">复制</button>`;
+      html += `<button class="note-action-btn" data-action="delete" data-id="${note.id}" title="删除">删除</button>`;
+      html += `</div></div>`;
       html += `<div class="note-content">${esc(note.content)}</div>`;
       if (note.refs && note.refs.length) {
         html += '<div class="note-refs">';
-        for (const ref of note.refs) {
-          html += `<span class="note-ref" data-file="${esc(ref.file)}" data-line="${ref.line}">${esc(ref.file)}:${ref.line}</span>`;
+        for (let ri = 0; ri < note.refs.length; ri++) {
+          const ref = note.refs[ri];
+          const stale = ref.stale;
+          const staleLabel = stale ? '<span class="stale-label">[失效]</span> ' : '';
+          const staleClass = stale ? ' stale' : '';
+          const refLabel = ref.endLine && ref.endLine !== ref.line
+            ? `${esc(ref.file)}:${ref.line}-${ref.endLine}`
+            : `${esc(ref.file)}:${ref.line}`;
+          html += `<span class="note-ref${staleClass}" data-file="${esc(ref.file)}" data-line="${ref.line}" title="${esc(ref.text || ref.absPath || '')}">${staleLabel}${refLabel}<span class="ref-remove" data-note-id="${note.id}" data-ref-idx="${ri}">&times;</span></span>`;
         }
         html += '</div>';
       }
@@ -589,10 +643,27 @@
     }
     notesList.innerHTML = html;
 
-    // Ref click -> scroll to source
+    // Single note actions
+    notesList.querySelectorAll('.note-action-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id);
+        if (btn.dataset.action === 'copy') copySingleNote(id);
+        else if (btn.dataset.action === 'delete') deleteSingleNote(id);
+      });
+    });
+
+    // Ref click -> toggle highlight + navigate
+    // Ref × click -> delete ref
     notesList.querySelectorAll('.note-ref').forEach(ref => {
-      ref.addEventListener('click', () => {
-        scrollToSource(ref.dataset.file, parseInt(ref.dataset.line));
+      ref.addEventListener('click', (e) => {
+        if (e.target.classList.contains('ref-remove')) {
+          e.stopPropagation();
+          const noteId = parseInt(e.target.dataset.noteId);
+          const refIdx = parseInt(e.target.dataset.refIdx);
+          deleteNoteRef(noteId, refIdx);
+          return;
+        }
+        toggleRefHighlight(ref.dataset.file, parseInt(ref.dataset.line));
       });
     });
   }
@@ -601,16 +672,28 @@
     const content = noteTextarea.value.trim();
     if (!content) return;
     const note = {
-      id: Date.now(),
-      type: noteType.value,
+      type: selectedNoteType,
       content,
       refs: pendingRefs.slice(),
     };
-    state.notes.unshift(note);
     pendingRefs = [];
     noteTextarea.value = '';
-    saveNotes();
-    renderNotes();
+    saveNote(note);
+  }
+
+  function copySingleNote(id) {
+    const note = state.notes.find(n => n.id === id);
+    if (!note) return;
+    const typeLabel = { decision: '决策', question: '疑问', suggestion: '建议' };
+    let text = `[${typeLabel[note.type] || note.type}] ${note.content}`;
+    if (note.refs && note.refs.length) {
+      text += '\n  ref: ' + note.refs.map(r => `${r.file}:${r.line}`).join(', ');
+    }
+    navigator.clipboard.writeText(text);
+  }
+
+  function deleteSingleNote(id) {
+    deleteNoteRemote(id);
   }
 
   function copyAllNotes() {
@@ -628,22 +711,100 @@
     });
   }
 
-  function scrollToSource(file, line) {
-    // Find the element with matching data-source-file and data-source-line
-    const targets = document.querySelectorAll(`[data-source-file="${file}"][data-source-line="${line}"]`);
-    if (targets.length) {
-      targets[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      targets[0].classList.add('source-highlight');
-      setTimeout(() => targets[0].classList.remove('source-highlight'), 2000);
-    }
-  }
-
   // ── Ref popover (text selection) ──
   let pendingRefs = [];
   let currentSelection = null;
+  const highlightedRefs = new Set();
+
+  function fileToTab(file) {
+    if (file.endsWith('_define.md') || file.endsWith('_roadmap.md')) return 'requirements';
+    if (file.includes('modules/')) return 'design';
+    if (file.endsWith('_check.md')) return 'check';
+    if (file.endsWith('_plan.md')) return 'execution';
+    return 'requirements';
+  }
+
+  function toggleRefHighlight(file, line) {
+    const key = `${file}:${line}`;
+    if (highlightedRefs.has(key)) {
+      highlightedRefs.delete(key);
+    } else {
+      highlightedRefs.add(key);
+      const tab = fileToTab(file);
+      switchTab(tab);
+    }
+    requestAnimationFrame(() => applyHighlights(file, line));
+  }
+
+  function applyHighlights(scrollFile, scrollLine) {
+    document.querySelectorAll('.source-highlight').forEach(el => el.classList.remove('source-highlight'));
+    for (const key of highlightedRefs) {
+      const [f, l] = key.split(':');
+      document.querySelectorAll(`[data-source-file="${f}"][data-source-line="${l}"]`).forEach(el => {
+        el.classList.add('source-highlight');
+      });
+    }
+    if (scrollFile && scrollLine) {
+      const el = document.querySelector(`[data-source-file="${scrollFile}"][data-source-line="${scrollLine}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    updateRefVisualStates();
+    renderPendingRefs();
+  }
+
+  function clearAllHighlights() {
+    highlightedRefs.clear();
+    document.querySelectorAll('.source-highlight').forEach(el => el.classList.remove('source-highlight'));
+    updateRefVisualStates();
+    renderPendingRefs();
+  }
+
+  function updateRefVisualStates() {
+    document.querySelectorAll('.note-ref, .ref-chip').forEach(el => {
+      const key = `${el.dataset.file}:${el.dataset.line}`;
+      el.classList.toggle('active', highlightedRefs.has(key));
+    });
+  }
+
+  function renderPendingRefs() {
+    const container = $('#pending-refs');
+    if (!pendingRefs.length) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+    container.style.display = 'flex';
+    container.innerHTML = pendingRefs.map((ref, i) => {
+      const key = `${ref.file}:${ref.line}`;
+      const active = highlightedRefs.has(key) ? ' active' : '';
+      const label = ref.endLine && ref.endLine !== ref.line
+        ? `${esc(ref.file)}:${ref.line}-${ref.endLine}`
+        : `${esc(ref.file)}:${ref.line}`;
+      return `<span class="ref-chip${active}" data-file="${esc(ref.file)}" data-line="${ref.line}" title="${esc(ref.text)}">${label}<span class="ref-remove" data-idx="${i}">&times;</span></span>`;
+    }).join('');
+
+    container.querySelectorAll('.ref-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('ref-remove')) return;
+        toggleRefHighlight(chip.dataset.file, parseInt(chip.dataset.line));
+      });
+    });
+
+    container.querySelectorAll('.ref-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.idx);
+        const removed = pendingRefs.splice(idx, 1)[0];
+        highlightedRefs.delete(`${removed.file}:${removed.line}`);
+        document.querySelectorAll(`[data-source-file="${removed.file}"][data-source-line="${removed.line}"]`).forEach(el => {
+          el.classList.remove('source-highlight');
+        });
+        renderPendingRefs();
+      });
+    });
+  }
 
   document.addEventListener('mouseup', (e) => {
-    // Don't show popover inside notes panel
     if (notesPanel.contains(e.target)) return;
 
     const selection = window.getSelection();
@@ -652,16 +813,26 @@
       return;
     }
 
-    currentSelection = {
-      text: selection.toString().trim(),
-      file: e.target.closest('[data-source-file]')?.dataset.sourceFile || '',
-      line: parseInt(e.target.closest('[data-source-line]')?.dataset.sourceLine || 0),
-    };
+    const anchor = selection.anchorNode;
+    const anchorEl = anchor?.nodeType === 3 ? anchor.parentElement : anchor;
+    const sourceFile = anchorEl?.closest('[data-source-file]')?.dataset.sourceFile || '';
+    const sourceLine = parseInt(anchorEl?.closest('[data-source-line]')?.dataset.sourceLine || 0);
 
-    if (!currentSelection.file) {
+    if (!sourceFile) {
       refPopover.style.display = 'none';
       return;
     }
+
+    const focus = selection.focusNode;
+    const focusEl = focus?.nodeType === 3 ? focus.parentElement : focus;
+    const endLine = parseInt(focusEl?.closest('[data-source-line]')?.dataset.sourceLine || sourceLine);
+
+    currentSelection = {
+      text: selection.toString().trim(),
+      file: sourceFile,
+      line: sourceLine,
+      endLine: endLine,
+    };
 
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
@@ -672,10 +843,14 @@
 
   refPopover.addEventListener('click', () => {
     if (currentSelection) {
-      pendingRefs.push({ file: currentSelection.file, line: currentSelection.line, text: currentSelection.text });
+      pendingRefs.push({ file: currentSelection.file, line: currentSelection.line, endLine: currentSelection.endLine, text: currentSelection.text });
       window.getSelection().removeAllRanges();
       refPopover.style.display = 'none';
-      // Visual feedback
+      if (!notesPanel.classList.contains('open')) {
+        notesPanel.classList.add('open');
+        notesToggleBtn.classList.add('panel-open');
+      }
+      renderPendingRefs();
       refPopover.textContent = `已添加 (${pendingRefs.length})`;
       setTimeout(() => { refPopover.innerHTML = '&#x1F4CC; 添加引用'; }, 1000);
     }
@@ -698,8 +873,8 @@
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Open directory
-    openDirBtn.addEventListener('click', openDirectory);
+    // Auto-load files from server
+    fetchAndLoadFiles();
 
     // Notes panel toggle
     notesToggleBtn.addEventListener('click', () => {
@@ -709,6 +884,15 @@
 
     // Add note
     addNoteBtn.addEventListener('click', addNote);
+
+    // Note type toggle buttons
+    $$('.note-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('.note-type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedNoteType = btn.dataset.type;
+      });
+    });
 
     // Copy all notes
     copyAllBtn.addEventListener('click', copyAllNotes);

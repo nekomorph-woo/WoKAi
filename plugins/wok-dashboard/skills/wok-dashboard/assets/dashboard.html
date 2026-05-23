@@ -24,14 +24,14 @@
     <main>
       <div id="welcome" class="welcome">
         <h2>Pipeline Dashboard</h2>
-        <p>打开 feature 目录以加载管道文档</p>
-        <button class="btn-primary" id="open-dir-btn">打开目录</button>
-        <input type="file" id="dir-input" webkitdirectory multiple>
+        <p>正在加载管道文档...</p>
+        <button class="btn-primary" id="open-dir-btn" style="display:none">打开目录</button>
+        <input type="file" id="dir-input" webkitdirectory multiple style="display:none">
       </div>
 
       <div id="tab-overview" class="tab-content"></div>
       <div id="tab-requirements" class="tab-content md-content"></div>
-      <div id="tab-design" class="tab-content"></div>
+      <div id="tab-design" class="tab-content md-content"></div>
       <div id="tab-check" class="tab-content md-content"></div>
       <div id="tab-execution" class="tab-content md-content"></div>
     </main>
@@ -45,13 +45,13 @@
     </div>
     <div class="notes-list" id="notes-list"></div>
     <div class="notes-input">
+      <div class="pending-refs" id="pending-refs"></div>
       <textarea id="note-textarea" placeholder="记录备注、决策或疑问..."></textarea>
       <div class="notes-actions">
-        <select id="note-type" class="btn-sm">
-          <option value="decision">决策</option>
-          <option value="question">疑问</option>
-          <option value="suggestion">建议</option>
-        </select>
+        <button class="btn-sm note-type-btn active" data-type="decision">决策</button>
+        <button class="btn-sm note-type-btn" data-type="question">疑问</button>
+        <button class="btn-sm note-type-btn" data-type="suggestion">建议</button>
+        <span class="notes-actions-divider"></span>
         <button class="btn-sm" id="add-note-btn">添加</button>
       </div>
     </div>

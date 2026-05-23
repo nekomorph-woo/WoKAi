@@ -792,6 +792,144 @@ main {
   display: flex;
   gap: 8px;
   margin-top: 8px;
+  align-items: center;
+}
+
+.note-type-btn.active {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.pending-refs {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+  min-height: 0;
+}
+
+.ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  border: 1px solid var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ref-chip:hover {
+  border-color: var(--fg);
+}
+
+.ref-chip.active {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+.ref-chip .ref-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  font-size: 10px;
+  opacity: 0.5;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ref-chip .ref-remove:hover {
+  opacity: 1;
+}
+
+.note-ref.active {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+.note-ref {
+  position: relative;
+  padding-right: 4px;
+}
+
+.note-ref .ref-remove {
+  display: none;
+  margin-left: 3px;
+  cursor: pointer;
+  opacity: 0.4;
+  font-size: 11px;
+}
+
+.note-ref:hover .ref-remove {
+  display: inline;
+}
+
+.note-ref .ref-remove:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.note-ref.stale {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.stale-label {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.notes-actions-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--muted);
+  margin: 0 4px;
+}
+
+.note-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.note-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.note-action-btn {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #737373;
+  background: transparent;
+  border: 1px solid var(--muted);
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.note-action-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .btn-sm {
