@@ -104,6 +104,18 @@
       "source": "./plugins/wok-dashboard",
       "description": "部署交互式 HTML dashboard 到 feature 目录，提供管道文档的可视化阅读、状态审批和备注能力。Use when 用户要求部署 dashboard、打开 dashboard、或提到 \"dashboard\" / \"wok-dashboard\"。",
       "version": "2.2.0"
+    },
+    {
+      "name": "wok-code-review",
+      "source": "./plugins/wok-code-review",
+      "description": "多 agent 并行代码审查，自动修复 🔴🟠 问题并迭代验证，嵌入实现循环。Use when 用户要求代码审查、审查变更、提到 \"wok-code-review\" / \"代码审查\"。",
+      "version": "0.1.0"
+    },
+    {
+      "name": "wok-cr-insight",
+      "source": "./plugins/wok-cr-insight",
+      "description": "分析审查报告中的 🟡 Advisory 问题，追加根因追溯和修改方案。Use when 用户要求分析 advisory 问题、深度分析审查报告、提到 \"wok-cr-insight\" / \"cr-insight\"。",
+      "version": "0.1.0"
     }
   ]
 }

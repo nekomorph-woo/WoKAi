@@ -205,6 +205,7 @@
       case 'design': renderDesign(); break;
       case 'check': renderCheck(); break;
       case 'execution': renderExecution(); break;
+      case 'review': renderReview(); break;
     }
   }
 
@@ -296,6 +297,7 @@
       { name: 'registry', label: '设计', test: (n) => n.includes('modules/') },
       { name: 'check', label: '校验', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
       { name: 'plan', label: '执行', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
+      { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
     ];
 
     html += '<div class="overview-section"><h2>Pipeline 状态</h2><div class="pipeline-progress">';
@@ -338,6 +340,7 @@
       { title: '模块设计', test: (n) => n.includes('modules/') },
       { title: '校验文档', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
       { title: '执行文档', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
+      { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
     ];
     const uncategorized = { title: '其他', items: [] };
     const groups = docGroups.map(g => ({ ...g, items: [] }));
@@ -723,7 +726,7 @@
     // Status bar
     html += renderFileStatusBar(planKey);
 
-    // Progress bar
+    // Progress section: vertical stack
     html += '<div class="exec-progress-section">';
     html += '<div class="exec-progress-bar"><div class="exec-progress-fill" style="width:' + pct + '%"></div></div>';
     html += '<div class="exec-progress-meta">';
@@ -731,17 +734,14 @@
     html += `<span class="exec-stat pending">${totalCount - doneCount} 待执行</span>`;
     html += `<span class="exec-stat pct">${pct}%</span>`;
     html += '</div>';
-
-    // Step status chips
+    html += '<button class="btn-sm" id="exec-refresh-btn">刷新</button>';
     html += '<div class="exec-step-chips">';
     for (const step of steps) {
       const cls = step.done ? 'done' : 'pending';
       html += `<span class="exec-chip ${cls}" data-step="${step.num}" title="${esc(step.title)}">${step.done ? '✓ ' : ''}Step ${step.num}</span>`;
     }
     html += '</div>';
-    html += '<div class="exec-progress-actions">';
-    html += '<button class="btn-sm" id="exec-refresh-btn">刷新</button>';
-    html += '</div></div>';
+    html += '</div>';
 
     // Render markdown body
     html += '<div class="plan-content">' + renderMd(plan.body, planKey) + '</div>';
@@ -804,6 +804,251 @@
     }
     if (currentStep) steps.push(currentStep);
     return steps;
+  }
+
+  // ── Review Tab ──
+  function parseReviewReport(body) {
+    const rounds = [];
+    const lines = body.split('\n');
+    let currentRound = null;
+    let currentSection = null;
+    let currentFinding = null;
+    let currentInsight = null;
+
+    function flushFinding() {
+      if (currentFinding) {
+        if (currentSection) currentSection.findings.push(currentFinding);
+        currentFinding = null;
+      }
+      if (currentInsight) {
+        if (currentFinding) currentFinding.insight = currentInsight;
+        currentInsight = null;
+      }
+    }
+
+    function flushSection() {
+      flushFinding();
+      if (currentSection && currentRound) {
+        currentRound.sections[currentSection.name] = currentSection.findings;
+      }
+      currentSection = null;
+    }
+
+    for (const line of lines) {
+      // Header
+      const headerMatch = line.match(/^#\s+Code Review Report/);
+      if (headerMatch) continue;
+
+      // Round header: ## Round N — status
+      const roundMatch = line.match(/^## Round (\d+)\s*[—\-]\s*(.*)/);
+      if (roundMatch) {
+        flushSection();
+        if (currentRound) rounds.push(currentRound);
+        const num = parseInt(roundMatch[1]);
+        const statusText = roundMatch[2].trim();
+        let status = '';
+        let badgeClass = '';
+        if (statusText.includes('Converged')) { status = 'converged'; badgeClass = 'converged'; }
+        else if (statusText.includes('Max rounds')) { status = 'max-rounds'; badgeClass = 'max-rounds'; }
+        currentRound = { num, status, badgeClass, meta: {}, sections: {} };
+        continue;
+      }
+
+      // Round metadata
+      const metaMatch = line.match(/^>\s*(\w+):\s*(.*)/);
+      if (metaMatch && currentRound && !currentSection) {
+        currentRound.meta[metaMatch[1]] = metaMatch[2].trim();
+        continue;
+      }
+
+      // Section header: ### Open / ### Resolved
+      const secMatch = line.match(/^###\s+(Open|Resolved)/);
+      if (secMatch && currentRound) {
+        flushSection();
+        currentSection = { name: secMatch[1], findings: [] };
+        continue;
+      }
+
+      // Separator
+      if (line.match(/^---+$/)) {
+        flushSection();
+        continue;
+      }
+
+      // Finding line: - [severity] file:line — title
+      const findingMatch = line.match(/^-\s+\[(🔴|🟠|🟡|🔴→✅|🟠→✅)\]\s+(.+?):(\d+|file)\s*[—\-]\s+(.*)/);
+      if (findingMatch && currentSection) {
+        flushFinding();
+        const severityRaw = findingMatch[1];
+        const isResolved = severityRaw.includes('→✅');
+        const severity = isResolved ? severityRaw.split('→')[0] : severityRaw;
+        currentFinding = {
+          severity,
+          isResolved,
+          file: findingMatch[2],
+          line: findingMatch[3],
+          title: findingMatch[4],
+          details: [],
+          insight: null,
+        };
+        continue;
+      }
+
+      // Finding detail lines (indented)
+      if (line.startsWith('  ') && currentFinding) {
+        const trimmed = line.trimStart();
+        // Insight block detection
+        const insightMatch = trimmed.match(/^>\s*\*\*(🔍 原因分析|🔧 修改方案|📐 一致性评估)\*\*/);
+        if (insightMatch) {
+          if (!currentFinding.insight) currentFinding.insight = {};
+          const type = insightMatch[1].startsWith('🔍') ? 'analysis' : insightMatch[1].startsWith('🔧') ? 'fix' : 'consistency';
+          currentFinding.insight[type] = (currentFinding.insight[type] || '') + trimmed.replace(/^>\s*\*\*[^*]+\*\*\s*/, '');
+          continue;
+        }
+        if (trimmed.startsWith('>') && currentFinding.insight) {
+          const lastKey = Object.keys(currentFinding.insight).pop();
+          if (lastKey) currentFinding.insight[lastKey] += '\n' + trimmed.replace(/^>\s*/, '');
+          continue;
+        }
+        currentFinding.details.push(trimmed);
+        continue;
+      }
+
+      // Non-matching lines — if inside finding, ignore; else flush
+      if (currentSection || currentRound) {
+        if (line.trim() === '') continue;
+      }
+    }
+
+    flushSection();
+    if (currentRound) rounds.push(currentRound);
+    return rounds;
+  }
+
+  function renderReview() {
+    const el = $('#tab-review');
+    const reviewKey = findFile('_review.md');
+    if (!reviewKey) {
+      el.innerHTML = '<p style="color:#737373;">未找到审查报告（_review.md）</p>';
+      return;
+    }
+    const review = state.parsed.get(reviewKey);
+    const rounds = parseReviewReport(review.body);
+
+    let html = renderFileStatusBar(reviewKey);
+
+    // Summary stats from header
+    const scopeMeta = review.body.match(/^>\s*scope:\s*(.+)$/m);
+    const genMeta = review.body.match(/^>\s*generated:\s*(.+)$/m);
+    const updateMeta = review.body.match(/^>\s*last_updated:\s*(.+)$/m);
+
+    if (scopeMeta || genMeta) {
+      html += '<div class="review-round-meta">';
+      if (scopeMeta) html += `<span>Scope: ${esc(scopeMeta[1])}</span>`;
+      if (genMeta) html += `<span>Generated: ${esc(genMeta[1])}</span>`;
+      if (updateMeta) html += `<span>Updated: ${esc(updateMeta[1])}</span>`;
+      html += '</div>';
+    }
+
+    // Render rounds (newest first)
+    const sortedRounds = [...rounds].sort((a, b) => b.num - a.num);
+    for (const round of sortedRounds) {
+      html += `<div class="review-round" id="review-round-${round.num}">`;
+      html += '<div class="review-round-header">';
+      html += `<span class="review-round-title">Round ${round.num}</span>`;
+      if (round.badgeClass) {
+        html += `<span class="review-round-badge ${round.badgeClass}">${esc(round.status === 'converged' ? 'Converged' : 'Max rounds')}</span>`;
+      }
+      html += '</div>';
+
+      // Round meta
+      if (round.meta.findings || round.meta.files) {
+        html += '<div class="review-round-meta">';
+        if (round.meta.reviewed_at) html += `<span>${esc(round.meta.reviewed_at)}</span>`;
+        if (round.meta.files) html += `<span>${esc(round.meta.files)}</span>`;
+        if (round.meta.findings) html += `<span>${esc(round.meta.findings)}</span>`;
+        if (round.meta.simplify) html += `<span>simplify: ${esc(round.meta.simplify)}</span>`;
+        html += '</div>';
+      }
+
+      // Open section
+      const openFindings = round.sections.Open || [];
+      if (openFindings.length) {
+        html += '<div class="review-section">';
+        html += '<div class="review-section-title">Open</div>';
+        for (const f of openFindings) {
+          html += renderFinding(f);
+        }
+        html += '</div>';
+      }
+
+      // Resolved section
+      const resolvedFindings = round.sections.Resolved || [];
+      if (resolvedFindings.length) {
+        html += '<div class="review-section">';
+        html += '<div class="review-section-title">Resolved</div>';
+        for (const f of resolvedFindings) {
+          html += renderFinding(f);
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+
+    if (!rounds.length) {
+      html += '<p style="color:#737373;">报告内容为空</p>';
+    }
+
+    el.innerHTML = html;
+    bindStatusToggles(el);
+
+    // Severity filter buttons
+    el.querySelectorAll('.severity-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.severity-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const severity = btn.dataset.severity;
+        el.querySelectorAll('.review-finding').forEach(item => {
+          item.style.display = (severity === 'all' || item.dataset.severity === severity) ? '' : 'none';
+        });
+      });
+    });
+  }
+
+  function renderFinding(f) {
+    const severityClass = f.severity === '🔴' ? 'red' : f.severity === '🟠' ? 'orange' : 'yellow';
+    const resolvedClass = f.isResolved ? ' review-finding-resolved' : '';
+    let html = `<div class="review-finding${resolvedClass}" data-severity="${severityClass}">`;
+    html += '<div class="review-finding-header">';
+    html += `<span class="review-finding-severity ${severityClass}">${esc(f.severity)}</span>`;
+    html += `<span class="review-finding-location">${esc(f.file)}:${esc(f.line)}</span>`;
+    html += `<span class="review-finding-title">${esc(f.title)}</span>`;
+    html += '</div>';
+
+    if (f.details.length) {
+      html += '<div class="review-finding-body">';
+      for (const d of f.details) {
+        html += `<p>${esc(d)}</p>`;
+      }
+      html += '</div>';
+    }
+
+    // Insight blocks (from cr-insight)
+    if (f.insight) {
+      if (f.insight.analysis) {
+        html += `<div class="review-insight analysis"><div class="review-insight-header">🔍 原因分析</div>${renderMd(f.insight.analysis, '')}</div>`;
+      }
+      if (f.insight.fix) {
+        html += `<div class="review-insight fix"><div class="review-insight-header">🔧 修改方案</div>${renderMd(f.insight.fix, '')}</div>`;
+      }
+      if (f.insight.consistency) {
+        html += `<div class="review-insight consistency"><div class="review-insight-header">📐 一致性评估</div>${renderMd(f.insight.consistency, '')}</div>`;
+      }
+    }
+
+    html += '</div>';
+    return html;
   }
 
   // ── Markdown Rendering with semantic markers ──
@@ -1022,6 +1267,7 @@
     if (file.includes('modules/')) return 'design';
     if (file === '_check.md' || file.endsWith('/_check.md')) return 'check';
     if (file === '_plan.md' || file.endsWith('/_plan.md')) return 'execution';
+    if (file === '_review.md' || file.endsWith('/_review.md')) return 'review';
     return 'requirements';
   }
 
