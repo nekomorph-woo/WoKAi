@@ -9,7 +9,7 @@ description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when
 
 1. 使用 Bash 执行：
    ```bash
-   ls ~/.claude/plugins/cache/ddai/wok-issue/*/skills/wok-issue/SKILL.md
+   ls ~/.claude/plugins/cache/wok/wok-issue/*/skills/wok-issue/SKILL.md
    ```
 
 2. 使用 Read 工具读取输出的路径
