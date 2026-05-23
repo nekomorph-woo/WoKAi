@@ -12,6 +12,7 @@ import hashlib
 import http.server
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -44,6 +45,7 @@ class SecureHandler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         super().end_headers()
 
     def do_GET(self):
@@ -70,11 +72,67 @@ class SecureHandler(http.server.SimpleHTTPRequestHandler):
             return
         self.send_error(404)
 
+    def do_PATCH(self):
+        if self.path == '/api/status':
+            self._update_status()
+            return
+        self.send_error(404)
+
     def do_OPTIONS(self):
         self.send_response(200)
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
+
+    VALID_STATUSES = {'draft', 'reviewed', 'approved'}
+
+    def _update_status(self):
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length)
+        try:
+            data = json.loads(body)
+        except (json.JSONDecodeError, ValueError):
+            self.send_error(400, 'Invalid JSON')
+            return
+        rel_file = data.get('file', '')
+        new_status = data.get('status', '')
+        if not rel_file or new_status not in self.VALID_STATUSES:
+            self.send_error(400, 'Missing or invalid file/status')
+            return
+        base = Path(BASE_DIR).resolve()
+        target = base / rel_file
+        try:
+            target = target.resolve()
+            if not str(target).startswith(str(base)):
+                self.send_error(403, 'Access denied')
+                return
+        except (OSError, ValueError):
+            self.send_error(403, 'Invalid path')
+            return
+        if not target.is_file():
+            self.send_error(404, 'File not found')
+            return
+        content = target.read_text(encoding='utf-8')
+        old_status = None
+        def replace_status(m):
+            nonlocal old_status
+            old_status = m.group(1)
+            return f'status: {new_status}\n'
+        new_content, count = re.subn(r'^status:\s*(\S+)', replace_status, content, count=1, flags=re.MULTILINE)
+        if count == 0:
+            self.send_error(400, 'No status field found in frontmatter')
+            return
+        target.write_text(new_content, encoding='utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Cache-Control', 'no-cache')
+        self.end_headers()
+        self.wfile.write(json.dumps({
+            'ok': True,
+            'file': rel_file,
+            'oldStatus': old_status,
+            'newStatus': new_status,
+        }, ensure_ascii=False).encode())
 
     def _serve_file_list(self):
         base = Path(BASE_DIR).resolve()

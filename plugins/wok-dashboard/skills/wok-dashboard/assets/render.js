@@ -67,13 +67,14 @@
       state.parsed.clear();
 
       for (const path of filePaths) {
-        const fileResp = await fetch(base + '/' + encodeURIComponent(path));
+        const fileResp = await fetch(base + '/' + path.split('/').map(encodeURIComponent).join('/'));
         if (!fileResp.ok) continue;
         const text = await fileResp.text();
         state.files.set(path, text);
         state.parsed.set(path, parseMarkdown(text, path));
       }
       onFilesLoaded();
+      updateApprovalBadge();
     } catch (e) {
       console.error('Failed to load files:', e);
       if (location.protocol === 'file:') {
@@ -113,8 +114,9 @@
   // ── Parsing ──
   function parseMarkdown(text, fileName) {
     const frontmatter = extractFrontmatter(text);
+    const bodyOffset = frontmatter ? frontmatter.raw.split('\n').length : 0;
     const body = frontmatter ? text.slice(frontmatter.raw.length).trim() : text;
-    const markers = extractMarkers(body);
+    const markers = extractMarkers(body).map(m => ({ ...m, line: m.line + bodyOffset, file: fileName }));
     return { frontmatter: frontmatter ? frontmatter.data : null, body, markers, raw: text };
   }
 
@@ -138,15 +140,15 @@
   function extractMarkers(body) {
     const markers = [];
     const lines = body.split('\n');
-    for (const line of lines) {
-      const hMatch = line.match(/^###?\s+\[(DECISION|OPEN)\]\s+(.+)$/);
+    for (let i = 0; i < lines.length; i++) {
+      const hMatch = lines[i].match(/^###?\s+\[(DECISION|OPEN)\]\s+(.+)$/);
       if (hMatch) {
-        markers.push({ type: hMatch[1], title: hMatch[2] });
+        markers.push({ type: hMatch[1], title: hMatch[2], line: i + 1 });
         continue;
       }
-      const aMatch = line.match(/^-\s+\[ACTION\]\s+(.+)$/);
+      const aMatch = lines[i].match(/^-\s+\[ACTION\]\s+(.+)$/);
       if (aMatch) {
-        markers.push({ type: 'ACTION', title: aMatch[1] });
+        markers.push({ type: 'ACTION', title: aMatch[1], line: i + 1 });
       }
     }
     return markers;
@@ -205,38 +207,104 @@
     }
   }
 
+  // ── Status API ──
+  const VALID_STATUSES = ['draft', 'reviewed', 'approved'];
+  const STATUS_LABELS = { draft: '待确认', reviewed: '已审阅', approved: '已确认' };
+
+  async function setStatus(file, newStatus) {
+    try {
+      const resp = await fetch(SERVER_URL + '/api/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file, status: newStatus }),
+      });
+      if (!resp.ok) return;
+      await fetchAndLoadFiles();
+      renderTab(state.activeTab);
+      updateApprovalBadge();
+    } catch (e) {
+      console.error('Failed to update status:', e);
+    }
+  }
+
+  function renderStatusToggle(file, currentStatus) {
+    const nextIdx = VALID_STATUSES.indexOf(currentStatus) + 1;
+    const nextStatus = VALID_STATUSES[nextIdx % VALID_STATUSES.length];
+    const cls = currentStatus === 'approved' ? 'approved' : currentStatus === 'reviewed' ? 'reviewed' : 'draft';
+    return `<span class="status-toggle ${cls}" data-file="${esc(file)}" data-status="${esc(currentStatus)}" title="点击切换为 ${nextStatus}">${esc(currentStatus)}</span>`;
+  }
+
+  function renderFileStatusBar(fileKey) {
+    if (!fileKey) return '';
+    const parsed = state.parsed.get(fileKey);
+    if (!parsed || !parsed.frontmatter) return '';
+    const status = parsed.frontmatter.status || 'draft';
+    return `<div class="file-status-bar"><span class="file-status-name">${esc(fileKey)}</span>${renderStatusToggle(fileKey, status)}</div>`;
+  }
+
+  function bindStatusToggles(root) {
+    root.querySelectorAll('.status-toggle').forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const file = toggle.dataset.file;
+        const current = toggle.dataset.status;
+        const idx = VALID_STATUSES.indexOf(current);
+        const next = VALID_STATUSES[(idx + 1) % VALID_STATUSES.length];
+        setStatus(file, next);
+      });
+    });
+  }
+
+  function updateApprovalBadge() {
+    let draftCount = 0;
+    let totalCount = 0;
+    for (const [, parsed] of state.parsed) {
+      if (!parsed.frontmatter) continue;
+      totalCount++;
+      if (parsed.frontmatter.status !== 'approved') draftCount++;
+    }
+    const badge = document.getElementById('approval-badge');
+    if (!badge) return;
+    if (draftCount === 0 && totalCount > 0) {
+      badge.textContent = '✓ all confirmed';
+      badge.className = 'approval-badge all-done';
+      badge.style.display = '';
+    } else if (draftCount > 0) {
+      badge.textContent = `⬤ ${draftCount} pending`;
+      badge.className = 'approval-badge';
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
   // ── Overview Tab ──
   function renderOverview() {
     const el = $('#tab-overview');
     let html = '';
 
-    // Pipeline progress (aggregate across all phases)
-    const phaseKeys = new Set();
-    for (const [key] of state.parsed) {
-      const phase = extractPhase(key);
-      if (phase) phaseKeys.add(phase);
-    }
-
-    const pipelineFiles = [
-      { name: 'define', suffix: '_define.md' },
-      { name: 'registry', suffix: 'modules/_registry.md' },
-      { name: 'check', suffix: '_check.md' },
-      { name: 'plan', suffix: '_plan.md' },
+    // Pipeline status — each phase shows approved ratio of its documents
+    const pipelinePhases = [
+      { name: 'define', label: '需求', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
+      { name: 'registry', label: '设计', test: (n) => n.includes('modules/') },
+      { name: 'check', label: '校验', test: (n) => n.endsWith('/_check.md') },
+      { name: 'plan', label: '执行', test: (n) => n.endsWith('/_plan.md') },
     ];
-    const approvedCount = pipelineFiles.filter(s => {
-      const key = findFile(s.suffix);
-      const p = key ? state.parsed.get(key) : null;
-      return p && p.frontmatter && p.frontmatter.status === 'approved';
-    }).length;
 
-    html += '<div class="overview-section"><h2>Pipeline 进度</h2><div class="pipeline-progress">';
-    pipelineFiles.forEach((s, i) => {
-      const key = findFile(s.suffix);
-      const p = key ? state.parsed.get(key) : null;
-      const done = p && p.frontmatter && p.frontmatter.status === 'approved';
-      const current = !done && p && (p.frontmatter && p.frontmatter.status !== 'approved');
-      html += `<div class="pipeline-step${done ? ' done' : ''}${current && i === approvedCount ? ' current' : ''}" title="${s.name}"></div>`;
-    });
+    html += '<div class="overview-section"><h2>Pipeline 状态</h2><div class="pipeline-progress">';
+    for (const phase of pipelinePhases) {
+      const phaseFiles = [];
+      for (const [name, parsed] of state.parsed) {
+        if (phase.test(name) && parsed.frontmatter) phaseFiles.push(parsed.frontmatter.status);
+      }
+      const total = phaseFiles.length;
+      const approved = phaseFiles.filter(s => s === 'approved').length;
+      const pct = total ? Math.round((approved / total) * 100) : 0;
+      html += `<div class="pipeline-phase" title="${phase.label}: ${approved}/${total} approved">`;
+      html += `<div class="pipeline-step"><div class="pipeline-step-fill" style="width:${pct}%"></div></div>`;
+      html += `<span class="pipeline-step-title">${phase.label}</span>`;
+      html += `</div>`;
+    }
     html += '</div></div>';
 
     // Findings baseline (if _findings.md exists at system level)
@@ -249,51 +317,151 @@
       html += '</details></div>';
     }
 
-    // Brief list
-    html += '<div class="overview-section"><h2>文档概要</h2><ul class="brief-list">';
+    // Brief list — grouped by category
+    const docGroups = [
+      { title: '需求文档', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
+      { title: '模块设计', test: (n) => n.includes('modules/') },
+      { title: '校验文档', test: (n) => n.endsWith('/_check.md') },
+      { title: '执行文档', test: (n) => n.endsWith('/_plan.md') },
+    ];
+    const uncategorized = { title: '其他', items: [] };
+    const groups = docGroups.map(g => ({ ...g, items: [] }));
     for (const [name, parsed] of state.parsed) {
       const brief = extractBrief(parsed.raw);
       const status = parsed.frontmatter ? parsed.frontmatter.status : '';
-      html += `<li class="brief-item" data-file="${name}"><span class="file-name">${name} [${status}]</span><br>${brief || '—'}</li>`;
+      const item = { name, brief, status };
+      const group = groups.find(g => g.test(name));
+      (group ? group.items : uncategorized.items).push(item);
     }
-    html += '</ul></div>';
+    for (const group of [...groups, uncategorized]) {
+      if (!group.items.length) continue;
+      html += `<div class="overview-section"><h2>${group.title}</h2>`;
+      if (group.title === '模块设计') {
+        html += '<div class="module-cards">';
+        const modMap = new Map();
+        for (const item of group.items) {
+          const m = item.name.match(/modules\/([^/]+)\/(.+)$/);
+          if (!m) continue;
+          const modName = m[1];
+          const fileName = m[2];
+          if (!modMap.has(modName)) modMap.set(modName, []);
+          modMap.get(modName).push({ ...item, fileName });
+        }
+        for (const [modName, files] of modMap) {
+          const mainFile = files.find(f => f.fileName === 'design.md') || files[0];
+          const status = mainFile.status;
+          const brief = mainFile.brief;
+          html += `<div class="module-card" data-module="${modName}">`;
+          html += `<div class="module-card-header">`;
+          html += `<span class="module-card-name">${esc(modName)}</span>`;
+          html += status ? renderStatusToggle(mainFile.name, status) : '';
+          html += `</div>`;
+          if (brief) html += `<div class="module-card-brief">${md.render(brief)}</div>`;
+          const fileTags = files.map(f => f.fileName.replace('.md', '')).join(' · ');
+          html += `<div class="module-card-files">${esc(fileTags)}</div>`;
+          html += '</div>';
+        }
+        html += '</div>';
+      } else {
+        html += '<ul class="brief-list">';
+        for (const item of group.items) {
+          html += `<li class="brief-item" data-file="${item.name}"><div class="brief-item-header"><span class="file-name">${esc(item.name)}</span>`;
+          html += item.status ? renderStatusToggle(item.name, item.status) : '';
+          html += `</div>${item.brief ? md.render(item.brief) : '<span style="color:#737373">—</span>'}</li>`;
+        }
+        html += '</ul>';
+      }
+      html += '</div>';
+    }
 
     // Marker aggregation
     const allMarkers = [];
     for (const [, parsed] of state.parsed) {
       allMarkers.push(...parsed.markers.map(m => ({ ...m })));
     }
-    const decisionCount = allMarkers.filter(m => m.type === 'DECISION').length;
-    const openCount = allMarkers.filter(m => m.type === 'OPEN').length;
-    const actionCount = allMarkers.filter(m => m.type === 'ACTION').length;
 
-    html += '<div class="overview-section"><h2>语义标记</h2><div class="marker-aggregate">';
-    if (decisionCount) html += `<div class="marker-count decision">DECISION ${decisionCount}</div>`;
-    if (openCount) html += `<div class="marker-count open">OPEN ${openCount}</div>`;
-    if (actionCount) html += `<div class="marker-count action">ACTION ${actionCount}</div>`;
-    if (!decisionCount && !openCount && !actionCount) html += '<span style="color:#737373;font-size:13px;">无语义标记</span>';
-    html += '</div>';
-
-    // Open items highlighted
-    if (openCount > 0) {
-      html += '<div style="margin-top:12px;">';
-      for (const m of allMarkers.filter(m => m.type === 'OPEN')) {
-        html += `<div class="marker open" style="padding:8px 12px;margin-bottom:4px;"><strong>${esc(m.title)}</strong></div>`;
+    html += '<div class="overview-section"><h2>语义标记</h2>';
+    if (allMarkers.length) {
+      html += '<div class="marker-tags">';
+      for (const m of allMarkers) {
+        const cls = m.type === 'OPEN' ? 'open' : m.type === 'ACTION' ? 'action' : 'decision';
+        html += `<span class="marker-tag ${cls}" data-source-file="${esc(m.file)}" data-source-line="${m.line}" title="${esc(m.title)}">${m.type.slice(0,3)} ${esc(m.title)}</span>`;
       }
       html += '</div>';
+    } else {
+      html += '<span style="color:#737373;font-size:13px;">无语义标记</span>';
     }
     html += '</div>';
 
     el.innerHTML = html;
 
-    // Brief item click -> switch to appropriate tab
+    // Brief item / module card click -> switch to appropriate tab + select module
     el.querySelectorAll('.brief-item').forEach(item => {
       item.addEventListener('click', () => {
         const file = item.dataset.file;
-        if (file.includes('/modules/')) switchTab('design');
-        else if (file.endsWith('/_check.md')) switchTab('check');
-        else if (file.endsWith('/_plan.md')) switchTab('execution');
-        else switchTab('requirements');
+        const modMatch = file.match(/(?:^|\/)modules\/([^/]+)/);
+        const modName = modMatch ? modMatch[1] : null;
+        if (modName && modName !== '_shared') {
+          state.activeModule = modName;
+          switchTab('design');
+        } else if (file.startsWith('modules/')) {
+          state.activeModule = null;
+          switchTab('design');
+        } else if (file.endsWith('/_check.md')) {
+          switchTab('check');
+        } else if (file.endsWith('/_plan.md')) {
+          switchTab('execution');
+        } else {
+          switchTab('requirements');
+        }
+      });
+    });
+    el.querySelectorAll('.module-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.status-toggle')) return;
+        const mod = card.dataset.module;
+        if (mod === '_shared') {
+          state.activeModule = '_shared';
+        } else {
+          state.activeModule = mod;
+        }
+        switchTab('design');
+      });
+    });
+    // Status toggle click (overview)
+    el.querySelectorAll('.status-toggle').forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const file = toggle.dataset.file;
+        const current = toggle.dataset.status;
+        const idx = VALID_STATUSES.indexOf(current);
+        const next = VALID_STATUSES[(idx + 1) % VALID_STATUSES.length];
+        setStatus(file, next);
+      });
+    });
+    // Marker tag click -> navigate to source
+    el.querySelectorAll('.marker-tag').forEach(tag => {
+      tag.style.cursor = 'pointer';
+      tag.addEventListener('click', () => {
+        const file = tag.dataset.sourceFile;
+        const line = parseInt(tag.dataset.sourceLine);
+        if (!file) return;
+        // Determine target tab
+        const modMatch = file.match(/modules\/([^/]+)/);
+        if (modMatch && modMatch[1] !== '_shared') {
+          state.activeModule = modMatch[1];
+          switchTab('design');
+        } else if (file.includes('modules/')) {
+          state.activeModule = null;
+          switchTab('design');
+        } else {
+          switchTab('requirements');
+        }
+        // Scroll to the marker line
+        requestAnimationFrame(() => {
+          const el = document.querySelector(`[data-source-file="${file}"][data-source-line="${line}"]`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
       });
     });
   }
@@ -311,10 +479,18 @@
     let html = '';
     const roadmapKey = findFile('_roadmap.md');
     const defineKey = findFile('_define.md');
+    if (!defineKey && !roadmapKey) {
+      el.innerHTML = '<p style="color:#737373;">未找到需求文档（_define.md / _roadmap.md）</p>';
+      return;
+    }
+    html += renderFileStatusBar(defineKey);
     if (defineKey) html += renderMd(state.parsed.get(defineKey).body, defineKey);
-    if (roadmapKey) html += '<hr>' + renderMd(state.parsed.get(roadmapKey).body, roadmapKey);
-    if (!defineKey && !roadmapKey) html = '<p style="color:#737373;">未找到需求文档（_define.md / _roadmap.md）</p>';
+    if (roadmapKey) {
+      html += renderFileStatusBar(roadmapKey);
+      html += renderMd(state.parsed.get(roadmapKey).body, roadmapKey);
+    }
     el.innerHTML = html;
+    bindStatusToggles(el);
   }
 
   // ── Design Tab ──
@@ -330,32 +506,52 @@
     // Extract module names from parsed files
     const modules = [];
     for (const name of state.files.keys()) {
-      const m = name.match(/\/modules\/([^/]+)\/design\.md$/);
+      const m = name.match(/modules\/([^/]+)\/design\.md$/);
       if (m && m[1] !== '_shared') modules.push(m[1]);
     }
 
-    if (state.activeModule && !modules.includes(state.activeModule)) {
-      state.activeModule = modules[0] || null;
+    // Collect _shared files
+    const sharedFiles = [];
+    for (const name of state.files.keys()) {
+      if (name.match(/modules\/_shared\//)) sharedFiles.push(name);
     }
-    if (!state.activeModule && modules.length) state.activeModule = modules[0];
+
+    if (state.activeModule && !modules.includes(state.activeModule) && state.activeModule !== '_shared') {
+      state.activeModule = null;
+    }
 
     let html = '<div class="design-layout">';
     html += '<div class="module-tree"><h3>模块</h3>';
-    // Registry link
     html += `<div class="module-item${!state.activeModule ? ' active' : ''}" data-module="">注册表</div>`;
     for (const mod of modules) {
       html += `<div class="module-item${state.activeModule === mod ? ' active' : ''}" data-module="${mod}">${mod}</div>`;
+    }
+    if (sharedFiles.length) {
+      html += '<div class="module-tree-divider"></div>';
+      html += `<div class="module-item${state.activeModule === '_shared' ? ' active' : ''}" data-module="_shared">共享</div>`;
     }
     html += '</div>';
 
     html += '<div class="module-detail">';
     if (!state.activeModule) {
+      html += renderFileStatusBar(registryKey);
       html += renderMd(registry.body, registryKey);
+    } else if (state.activeModule === '_shared') {
+      for (const f of sharedFiles) {
+        html += renderFileStatusBar(f);
+        html += renderMd(state.parsed.get(f).body, f);
+      }
     } else {
       const designKey = findFile(`modules/${state.activeModule}/design.md`);
       const decisionsKey = findFile(`modules/${state.activeModule}/decisions.md`);
-      if (designKey) html += renderMd(state.parsed.get(designKey).body, designKey);
-      if (decisionsKey) html += '<hr>' + renderMd(state.parsed.get(decisionsKey).body, decisionsKey);
+      if (designKey) {
+        html += renderFileStatusBar(designKey);
+        html += renderMd(state.parsed.get(designKey).body, designKey);
+      }
+      if (decisionsKey) {
+        html += renderFileStatusBar(decisionsKey);
+        html += '<hr>' + renderMd(state.parsed.get(decisionsKey).body, decisionsKey);
+      }
       if (!designKey && !decisionsKey) html = '<p style="color:#737373;">未找到该模块的设计文档</p>';
     }
     html += '</div></div>';
@@ -369,6 +565,7 @@
         renderDesign();
       });
     });
+    bindStatusToggles(el);
   }
 
   // ── Check Tab ──

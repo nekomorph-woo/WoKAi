@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "wok 插件市场，为 Claude Code 用户提供需求、编程、设计、方案、审视等能力扩展",
-    "version": "1.1.3"
+    "version": "1.2.0"
   },
   "plugins": [
     {
@@ -102,8 +102,8 @@
     {
       "name": "wok-dashboard",
       "source": "./plugins/wok-dashboard",
-      "description": "部署交互式 HTML dashboard 到 feature 目录，提供管道文档的可视化阅读和备注能力。Use when 用户要求部署 dashboard、打开 dashboard、或提到 \"dashboard\" / \"wok-dashboard\"。",
-      "version": "2.0.0"
+      "description": "部署交互式 HTML dashboard 到 feature 目录，提供管道文档的可视化阅读、状态审批和备注能力。Use when 用户要求部署 dashboard、打开 dashboard、或提到 \"dashboard\" / \"wok-dashboard\"。",
+      "version": "2.1.0"
     }
   ]
 }

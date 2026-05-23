@@ -113,10 +113,9 @@ main {
 
 .tab-content {
   display: none;
-  max-width: 960px;
+  max-width: 80vw;
   margin: 0 auto;
   padding: 32px 24px;
-  padding-right: 340px;
 }
 
 .tab-content.active {
@@ -359,23 +358,40 @@ main {
 
 .pipeline-progress {
   display: flex;
-  gap: 4px;
+  gap: 12px;
   margin: 12px 0;
 }
 
-.pipeline-step {
+.pipeline-phase {
   flex: 1;
+}
+
+.pipeline-step {
   height: 8px;
-  background: var(--muted);
-  position: relative;
-}
-
-.pipeline-step.done {
-  background: var(--fg);
-}
-
-.pipeline-step.current {
   background: var(--accent);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+
+.pipeline-step-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: #22C55E;
+  transition: width 0.3s ease-out;
+}
+
+.pipeline-step-title {
+  display: block;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #737373;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .findings-details {
@@ -455,40 +471,115 @@ main {
   background: #F5F5F5;
 }
 
+.brief-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .brief-item .file-name {
   font-family: var(--font-mono);
   font-size: 11px;
   color: #737373;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  flex: 1;
 }
 
-.marker-aggregate {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
+/* ── Overview: Module Cards Grid ── */
 
-.marker-count {
-  border: 1px solid var(--border);
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
+.module-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
+}
+
+.module-card {
+  border: 1px solid var(--border);
+  padding: 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.marker-count:hover {
-  box-shadow: 4px 4px 0 0 var(--fg);
-  transform: translate(-2px, -2px);
+.module-card:hover {
+  background: #F5F5F5;
+  box-shadow: 3px 3px 0 0 var(--fg);
+  transform: translate(-1px, -1px);
 }
 
-.marker-count.decision { border-left: 4px solid var(--border); }
-.marker-count.open { border-left: 4px solid var(--accent); color: var(--accent); }
-.marker-count.action { border-left: 4px solid var(--border); }
+.module-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.module-card-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.module-card-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #737373;
+  border: 1px solid var(--muted);
+  padding: 1px 6px;
+}
+
+.module-card-brief {
+  font-size: 12px;
+  color: #525252;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+.module-card-brief p { margin: 0; }
+
+.module-card-files {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Semantic Marker Tags ── */
+
+.marker-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.marker-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.marker-tag.decision { border-left: 3px solid var(--fg); }
+.marker-tag.open { border-left: 3px solid var(--accent); color: var(--accent); }
+.marker-tag.action { border-left: 3px solid var(--border); }
 
 /* ── Design Tab: Module Tree ── */
 
@@ -538,6 +629,13 @@ main {
   flex: 1;
   padding: 16px 24px;
   overflow-y: auto;
+  min-width: 0;
+}
+
+.module-tree-divider {
+  height: 1px;
+  background: var(--muted);
+  margin: 8px 0;
 }
 
 /* ── Check Tab: Severity Filters ── */
@@ -991,4 +1089,84 @@ main {
 
 #dir-input {
   display: none;
+}
+
+/* ── Approval Badge ── */
+
+.approval-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.approval-badge:hover {
+  color: var(--muted);
+}
+
+.approval-badge.all-done {
+  color: var(--muted);
+}
+
+/* ── Status Toggle ── */
+
+.status-toggle {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border: 1px solid var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.status-toggle:hover {
+  border-color: var(--fg);
+}
+
+.status-toggle.draft {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.status-toggle.draft:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.status-toggle.reviewed {
+  border-color: var(--fg);
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.status-toggle.approved {
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+/* ── File Status Bar ── */
+
+.file-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--muted);
+}
+
+.file-status-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
