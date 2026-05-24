@@ -63,6 +63,21 @@ header h1 {
   letter-spacing: 0.05em;
   display: inline-flex;
   align-items: baseline;
+  gap: 2px;
+}
+
+.header-sep {
+  color: var(--muted);
+  font-weight: 400;
+  margin: 0 2px;
+}
+
+.header-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: var(--muted);
 }
 
 header .edition {
@@ -670,6 +685,12 @@ main {
   min-width: 0;
 }
 
+.module-doc-section + .module-doc-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid var(--border);
+}
+
 .module-tree-divider {
   height: 1px;
   background: var(--muted);
@@ -1274,6 +1295,89 @@ main {
 
 /* ── Review Tab ── */
 
+.review-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding: 10px 16px 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+.review-nav-stats {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #525252;
+  margin-bottom: 8px;
+}
+
+.review-nav-rounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-nav-round {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.review-nav-round-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #525252;
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+
+.review-nav-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.review-nav-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 8px;
+  border-left: 3px solid var(--muted);
+  line-height: 1.6;
+  transition: opacity 0.15s;
+}
+
+.review-nav-tag:hover {
+  opacity: 0.7;
+}
+
+.review-nav-tag.red {
+  background: #FEE2E2;
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.review-nav-tag.orange {
+  background: #FEF3C7;
+  border-left-color: #F59E0B;
+  color: #92400E;
+}
+
+.review-nav-tag.yellow {
+  background: #FEF9C3;
+  border-left-color: #EAB308;
+  color: #713F12;
+}
+
+.review-nav-tag.resolved {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
 .review-round {
   border: 1px solid var(--border);
   margin-bottom: 16px;
@@ -1421,3 +1525,7 @@ main {
 .review-insight.analysis { border-left-color: #3B82F6; }
 .review-insight.fix { border-left-color: #22C55E; }
 .review-insight.consistency { border-left-color: #A855F7; }
+
+/* ── Overview: Review Summary ── */
+
+

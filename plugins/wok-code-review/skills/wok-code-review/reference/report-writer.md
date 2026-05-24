@@ -74,6 +74,7 @@ simplify_count: <positive-int>
 ### Resolved
 
 - [🟠→✅] src/api/handler.go:85 — 错误响应未包装
+  原因: fmt.Errorf 仅包装错误消息，未携带原始 error
   修复: 使用 fmt.Errorf 包装原始错误
   简化: 已优化 ✅
 
@@ -101,7 +102,7 @@ simplify_count: <positive-int>
 | 首次生成 | 创建文件，写入 header + Round 1 |
 | 当前轮次覆写 | 定位 `## Round <N>`，替换该分区全部内容 |
 | 历史轮次追加 | 旧 Round 下移，追加新 Round |
-| 🔴🟠 修复 | 从 Open 移除，写入当前轮次 Resolved |
+| 🔴🟠 修复 | 从 Open 移除，写入当前轮次 Resolved。保留原始 `原因`，追加 `修复` 和 `简化` |
 | 🟡 首次发现 | 写入当前轮次 Open |
 | 🟡 重复出现 | 不写入 Open，仅在元数据中计数 |
 | 🟡 不再出现 | 自然消失 |

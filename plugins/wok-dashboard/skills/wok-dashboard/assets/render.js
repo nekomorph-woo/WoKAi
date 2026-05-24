@@ -385,7 +385,8 @@
         for (const item of group.items) {
           html += `<li class="brief-item" data-file="${item.name}"><div class="brief-item-header"><span class="file-name">${esc(item.name)}</span>`;
           html += item.status ? renderStatusToggle(item.name, item.status) : '';
-          html += `</div>${item.brief ? md.render(item.brief) : '<span style="color:#737373">—</span>'}</li>`;
+          const briefHtml = item.brief || (item.name === '_review.md' || item.name.endsWith('/_review.md') ? buildReviewBrief(item.name) : null);
+          html += `</div>${briefHtml ? md.render(briefHtml) : '<span style="color:#737373">—</span>'}</li>`;
         }
         html += '</ul>';
       }
@@ -445,6 +446,8 @@
           switchTab('check');
         } else if (file === '_plan.md' || file.endsWith('/_plan.md')) {
           switchTab('execution');
+        } else if (file === '_review.md' || file.endsWith('/_review.md')) {
+          switchTab('review');
         } else {
           switchTab('requirements');
         }
@@ -583,12 +586,16 @@
       const designKey = findFile(`modules/${state.activeModule}/design.md`);
       const decisionsKey = findFile(`modules/${state.activeModule}/decisions.md`);
       if (designKey) {
+        html += '<div class="module-doc-section">';
         html += renderFileStatusBar(designKey);
         html += renderMd(state.parsed.get(designKey).body, designKey);
+        html += '</div>';
       }
       if (decisionsKey) {
+        html += '<div class="module-doc-section">';
         html += renderFileStatusBar(decisionsKey);
-        html += '<hr>' + renderMd(state.parsed.get(decisionsKey).body, decisionsKey);
+        html += renderMd(state.parsed.get(decisionsKey).body, decisionsKey);
+        html += '</div>';
       }
       if (!designKey && !decisionsKey) html = '<p style="color:#737373;">未找到该模块的设计文档</p>';
     }
@@ -807,6 +814,31 @@
   }
 
   // ── Review Tab ──
+  function buildReviewBrief(name) {
+    const review = state.parsed.get(name);
+    if (!review) return null;
+    const rounds = parseReviewReport(review.body);
+    if (!rounds.length) return null;
+    const latest = rounds.reduce((a, b) => b.num > a.num ? b : a);
+    const open = Object.values(latest.sections).flat().filter(f => !f.isResolved);
+    const resolved = (latest.sections.Resolved || []).length;
+    const red = open.filter(f => f.severity === '🔴').length;
+    const orange = open.filter(f => f.severity === '🟠').length;
+    const yellow = open.filter(f => f.severity === '🟡').length;
+    const parts = [];
+    if (latest.badgeClass) {
+      const label = latest.status === 'converged' ? '✅ 已收敛' : '⚠️ 达到上限';
+      parts.push(label);
+    }
+    parts.push(`Round ${latest.num}`);
+    if (red) parts.push(`${red} 🔴`);
+    if (orange) parts.push(`${orange} 🟠`);
+    if (yellow) parts.push(`${yellow} 🟡`);
+    if (resolved) parts.push(`${resolved} ✅`);
+    if (!open.length && !resolved) parts.push('无问题');
+    return parts.join(' · ');
+  }
+
   function parseReviewReport(body) {
     const rounds = [];
     const lines = body.split('\n');
@@ -816,13 +848,13 @@
     let currentInsight = null;
 
     function flushFinding() {
+      if (currentInsight && currentFinding) {
+        currentFinding.insight = currentInsight;
+        currentInsight = null;
+      }
       if (currentFinding) {
         if (currentSection) currentSection.findings.push(currentFinding);
         currentFinding = null;
-      }
-      if (currentInsight) {
-        if (currentFinding) currentFinding.insight = currentInsight;
-        currentInsight = null;
       }
     }
 
@@ -876,7 +908,7 @@
       }
 
       // Finding line: - [severity] file:line — title
-      const findingMatch = line.match(/^-\s+\[(🔴|🟠|🟡|🔴→✅|🟠→✅)\]\s+(.+?):(\d+|file)\s*[—\-]\s+(.*)/);
+      const findingMatch = line.match(/^-\s+\[(🔴|🟠|🟡|🔴→✅|🟠→✅)\]\s+(.+?)(?::(\d+|file))?\s*(?:—|--|-)\s+(.*)/);
       if (findingMatch && currentSection) {
         flushFinding();
         const severityRaw = findingMatch[1];
@@ -886,7 +918,7 @@
           severity,
           isResolved,
           file: findingMatch[2],
-          line: findingMatch[3],
+          line: findingMatch[3] || 'file',
           title: findingMatch[4],
           details: [],
           insight: null,
@@ -937,22 +969,40 @@
 
     let html = renderFileStatusBar(reviewKey);
 
-    // Summary stats from header
-    const scopeMeta = review.body.match(/^>\s*scope:\s*(.+)$/m);
-    const genMeta = review.body.match(/^>\s*generated:\s*(.+)$/m);
-    const updateMeta = review.body.match(/^>\s*last_updated:\s*(.+)$/m);
-
-    if (scopeMeta || genMeta) {
-      html += '<div class="review-round-meta">';
-      if (scopeMeta) html += `<span>Scope: ${esc(scopeMeta[1])}</span>`;
-      if (genMeta) html += `<span>Generated: ${esc(genMeta[1])}</span>`;
-      if (updateMeta) html += `<span>Updated: ${esc(updateMeta[1])}</span>`;
-      html += '</div>';
+    // Sticky nav: stats + round groups with finding tags
+    const sortedRounds = [...rounds].sort((a, b) => a.num - b.num);
+    let totalFindings = 0;
+    let totalResolved = 0;
+    for (const r of sortedRounds) {
+      const all = [...(r.sections.Open || []), ...(r.sections.Resolved || [])];
+      totalFindings += all.length;
+      totalResolved += all.filter(f => f.isResolved).length;
     }
 
-    // Render rounds (newest first)
-    const sortedRounds = [...rounds].sort((a, b) => b.num - a.num);
+    html += '<div class="review-nav">';
+    html += `<div class="review-nav-stats">${totalResolved}/${totalFindings} 已解决</div>`;
+    html += '<div class="review-nav-rounds">';
     for (const round of sortedRounds) {
+      const allFindings = [...(round.sections.Open || []), ...(round.sections.Resolved || [])];
+      if (!allFindings.length) continue;
+      html += '<div class="review-nav-round">';
+      html += `<span class="review-nav-round-label">Round ${round.num}</span>`;
+      html += '<div class="review-nav-tags">';
+      for (let i = 0; i < allFindings.length; i++) {
+        const f = allFindings[i];
+        const fId = `r${round.num}-f${i}`;
+        const sevCls = f.severity === '🔴' ? 'red' : f.severity === '🟠' ? 'orange' : 'yellow';
+        const shortTitle = f.title.length > 20 ? f.title.slice(0, 20) + '…' : f.title;
+        const resolvedTag = f.isResolved ? ' resolved' : '';
+        html += `<span class="review-nav-tag ${sevCls}${resolvedTag}" data-target="${fId}" title="${esc(f.file)}:${esc(f.line)} — ${esc(f.title)}">${esc(f.severity)} ${esc(shortTitle)}</span>`;
+      }
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+
+    // Render round content (newest first)
+    const reverseRounds = [...sortedRounds].reverse();
+    for (const round of reverseRounds) {
       html += `<div class="review-round" id="review-round-${round.num}">`;
       html += '<div class="review-round-header">';
       html += `<span class="review-round-title">Round ${round.num}</span>`;
@@ -976,19 +1026,20 @@
       if (openFindings.length) {
         html += '<div class="review-section">';
         html += '<div class="review-section-title">Open</div>';
-        for (const f of openFindings) {
-          html += renderFinding(f);
+        for (let i = 0; i < openFindings.length; i++) {
+          html += renderFinding(openFindings[i], `r${round.num}-f${i}`);
         }
         html += '</div>';
       }
 
       // Resolved section
       const resolvedFindings = round.sections.Resolved || [];
+      const openLen = openFindings.length;
       if (resolvedFindings.length) {
         html += '<div class="review-section">';
         html += '<div class="review-section-title">Resolved</div>';
-        for (const f of resolvedFindings) {
-          html += renderFinding(f);
+        for (let i = 0; i < resolvedFindings.length; i++) {
+          html += renderFinding(resolvedFindings[i], `r${round.num}-f${openLen + i}`);
         }
         html += '</div>';
       }
@@ -1003,23 +1054,20 @@
     el.innerHTML = html;
     bindStatusToggles(el);
 
-    // Severity filter buttons
-    el.querySelectorAll('.severity-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        el.querySelectorAll('.severity-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const severity = btn.dataset.severity;
-        el.querySelectorAll('.review-finding').forEach(item => {
-          item.style.display = (severity === 'all' || item.dataset.severity === severity) ? '' : 'none';
-        });
+    // Tag click -> scroll to finding
+    el.querySelectorAll('.review-nav-tag').forEach(tag => {
+      tag.style.cursor = 'pointer';
+      tag.addEventListener('click', () => {
+        const target = el.querySelector(`#${CSS.escape(tag.dataset.target)}`);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
   }
 
-  function renderFinding(f) {
+  function renderFinding(f, fId) {
     const severityClass = f.severity === '🔴' ? 'red' : f.severity === '🟠' ? 'orange' : 'yellow';
     const resolvedClass = f.isResolved ? ' review-finding-resolved' : '';
-    let html = `<div class="review-finding${resolvedClass}" data-severity="${severityClass}">`;
+    let html = `<div class="review-finding${resolvedClass}" id="${fId}" data-severity="${severityClass}" style="scroll-margin-top:120px">`;
     html += '<div class="review-finding-header">';
     html += `<span class="review-finding-severity ${severityClass}">${esc(f.severity)}</span>`;
     html += `<span class="review-finding-location">${esc(f.file)}:${esc(f.line)}</span>`;
