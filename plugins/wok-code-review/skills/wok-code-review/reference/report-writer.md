@@ -66,17 +66,50 @@ simplify_count: <positive-int>
   修复方案: 添加 exp 字段校验
   来源: code-reviewer
 
+  <details>
+  <summary>【审查证据】src/auth.py:42 — JWT exp 字段未校验导致过期 token 被接受</summary>
+
+  > **🔍 原因分析**
+  > （cr-insight 原因分析内容）
+  >
+  > **🔧 修改方案**
+  > （cr-insight 修改方案内容）
+  >
+  > **📐 一致性评估**
+  > （cr-insight 一致性评估内容）
+
+  </details>
+
 - [🟡] src/utils.py:108 — 日期解析缺少时区处理
   原因: datetime.now() 不含时区信息
   建议: 使用 datetime.now(tz=timezone.utc)
   来源: type-design-analyzer
 
+  <details>
+  <summary>【审查证据】src/utils.py:108 — datetime.now() 无时区导致时间漂移</summary>
+
+  > **🔍 原因分析**
+  > （cr-insight 原因分析内容）
+  >
+  > **🔧 修改方案**
+  > （cr-insight 修改方案内容）
+  >
+  > **📐 一致性评估**
+  > （cr-insight 一致性评估内容）
+
+  </details>
+
 ### Resolved
+
+<details>
+<summary>【审查证据】[RESOLVED] src/api/handler.go:85 — 错误响应未包装</summary>
 
 - [🟠→✅] src/api/handler.go:85 — 错误响应未包装
   原因: fmt.Errorf 仅包装错误消息，未携带原始 error
   修复: 使用 fmt.Errorf 包装原始错误
   简化: 已优化 ✅
+
+</details>
 
 ---
 
@@ -127,5 +160,5 @@ simplify_count: <positive-int>
 - 单文件操作，不创建辅助文件
 - GitHub-flavored Markdown 兼容
 - 轮次标题和问题条目格式为 dashboard 解析锚点
-- DO NOT 记录代码 diff 或文件内容
+- DO NOT 记录完整文件内容或大段 diff — cr-insight 块内仅允许针对特定行的 before/after 示例片段
 - DO NOT 修改已写入的历史轮次内容

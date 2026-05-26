@@ -1486,7 +1486,11 @@
     const state = f.state || (f.isResolved ? 'resolved' : 'open');
     const stateClass = state === 'resolved' ? ' review-finding-resolved' : state === 'accepted' ? ' review-finding-accepted' : '';
     const stateBadge = state !== 'open' ? `<span class="finding-state-tag ${state}">${state === 'resolved' ? 'resolved' : 'accepted'}</span>` : '';
+    const wrapResolved = state !== 'open';
     let html = `<div class="review-finding${stateClass}" id="${fId}" data-severity="${severityClass}" data-state="${state}" style="scroll-margin-top:120px">`;
+    if (wrapResolved) {
+      html += `<details class="review-resolved-details"><summary class="review-resolved-summary">【审查证据】[${state === 'resolved' ? 'RESOLVED' : 'ACCEPTED'}] ${esc(f.file)}:${esc(f.line)} — ${esc(f.title)}</summary>`;
+    }
     html += '<div class="review-finding-header">';
     html += `<span class="review-finding-severity ${severityClass}">${esc(f.severity)}</span>`;
     html += `<span class="review-finding-location">${esc(f.file)}:${esc(f.line)}</span>`;
@@ -1504,17 +1508,27 @@
 
     // Insight blocks (from cr-insight)
     if (f.insight) {
+      const hasAny = f.insight.analysis || f.insight.fix || f.insight.consistency;
+      if (hasAny) {
+        html += `<details class="review-insight-details"><summary class="review-insight-summary">【审查证据】${esc(f.file)}:${esc(f.line)} — ${esc(f.title)}</summary>`;
+      }
       if (f.insight.analysis) {
-        html += `<div class="review-insight analysis"><div class="review-insight-header">🔍 原因分析</div>${renderMd(f.insight.analysis, '')}</div>`;
+        html += `<div class="review-insight analysis"><div class="review-insight-header">🔍 原因分析</div>${renderMd(f.insight.analysis, f.file || '')}</div>`;
       }
       if (f.insight.fix) {
-        html += `<div class="review-insight fix"><div class="review-insight-header">🔧 修改方案</div>${renderMd(f.insight.fix, '')}</div>`;
+        html += `<div class="review-insight fix"><div class="review-insight-header">🔧 修改方案</div>${renderMd(f.insight.fix, f.file || '')}</div>`;
       }
       if (f.insight.consistency) {
-        html += `<div class="review-insight consistency"><div class="review-insight-header">📐 一致性评估</div>${renderMd(f.insight.consistency, '')}</div>`;
+        html += `<div class="review-insight consistency"><div class="review-insight-header">📐 一致性评估</div>${renderMd(f.insight.consistency, f.file || '')}</div>`;
+      }
+      if (hasAny) {
+        html += `</details>`;
       }
     }
 
+    if (wrapResolved) {
+      html += `</details>`;
+    }
     html += '</div>';
     return html;
   }

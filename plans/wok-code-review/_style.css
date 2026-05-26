@@ -2041,6 +2041,43 @@ main {
 .review-insight.fix { border-left-color: #22C55E; }
 .review-insight.consistency { border-left-color: #A855F7; }
 
+/* ── Review Insight Details (collapsed) ── */
+
+.review-insight-details {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  background: #fafafa;
+}
+.review-insight-details > .review-insight { border-left-width: 3px; }
+.review-insight-summary {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: #f0f0f0;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.review-insight-summary:hover { background: #e8e8e8; }
+.review-insight-details[open] .review-insight-summary { border-bottom: 1px solid var(--border); }
+
+.review-resolved-details {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  background: #fafafa;
+}
+.review-resolved-summary {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: #f0f0f0;
+  user-select: none;
+}
+.review-resolved-summary:hover { background: #e8e8e8; }
+
 /* ── Stale Warning Banner ── */
 
 .stale-banner {

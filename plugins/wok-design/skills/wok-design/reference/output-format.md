@@ -71,7 +71,7 @@ changed: 初始版本
 ## 接口契约
 
 <details>
-<summary>FunctionName(param: Type): ReturnType</summary>
+<summary>【详细接口】FunctionName — 一句话职责</summary>
 
 ### 参数
 | 字段 | 类型 | 必填 | 说明 |
