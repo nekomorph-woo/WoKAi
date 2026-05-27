@@ -18,12 +18,12 @@ plugins/<name>/.claude-plugin/plugin.json
 └── version                 ← 插件独立版本（与 marketplace.json 同步）
 ```
 
-每个插件的版本号存在于 **2 个位置**，升级时必须同步更新：
+当前插件：
 
-| 位置 | 文件 |
-|------|------|
-| 插件清单 | `plugins/<name>/.claude-plugin/plugin.json` |
-| 市场注册 | `.claude-plugin/marketplace.json` 中对应条目 |
+| 插件 | 路径 | 内容 |
+|------|------|------|
+| **wok** | `plugins/wok/` | 管道核心（16 skills + agents + scripts） |
+| **wok-kit** | `plugins/wok-kit/` | 辅助工具集（4 skills） |
 
 ## 工作流程
 
@@ -39,7 +39,7 @@ plugins/<name>/.claude-plugin/plugin.json
     {"label": "升级插件版本", "description": "升级指定插件的版本号并同步"},
     {"label": "升级 Marketplace 版本", "description": "升级 marketplace.json 整体版本"},
     {"label": "审计版本一致性", "description": "检查所有插件版本号是否同步"},
-    {"label": "批量升级", "description": "同时升级多个插件的版本"}
+    {"label": "全部升级", "description": "同时升级 wok 和 wok-kit"}
   ],
   "multiSelect": false
 }
@@ -47,7 +47,7 @@ plugins/<name>/.claude-plugin/plugin.json
 
 ### 2. 升级插件版本
 
-1. 使用 Grep 或 Read 读取目标插件的当前版本：
+1. 使用 Read 读取目标插件的当前版本：
    - `plugins/<name>/.claude-plugin/plugin.json` → `version` 字段
    - `.claude-plugin/marketplace.json` → `plugins[]` 中对应条目的 `version` 字段
 
@@ -85,27 +85,25 @@ plugins/<name>/.claude-plugin/plugin.json
 
 ### 4. 审计版本一致性
 
-1. 遍历所有插件的 `plugin.json`，收集版本号
-2. 遍历 `marketplace.json` 中 `plugins[]`，收集版本号
+1. 读取 `plugins/wok/.claude-plugin/plugin.json` 和 `plugins/wok-kit/.claude-plugin/plugin.json` 的版本号
+2. 读取 `.claude-plugin/marketplace.json` 中 `plugins[]` 的版本号
 3. 对比每对版本号，输出报告：
 
 ```
 📊 版本一致性审计
 
-✅ write-a-skill      plugin.json: 0.2.0  marketplace.json: 0.2.0
-✅ zap               plugin.json: 0.2.0  marketplace.json: 0.2.0
-❌ wok-refine-rule       plugin.json: 0.3.0  marketplace.json: 0.2.0  ← 不一致
+✅ wok       plugin.json: 1.0.0  marketplace.json: 1.0.0
+✅ wok-kit   plugin.json: 1.0.0  marketplace.json: 1.0.0
 
-总计: 16 个插件，15 个一致，1 个不一致
+总计: 2 个插件，2 个一致
 ```
 
 检测到不一致时，询问是否自动修复为 `plugin.json` 中的版本。
 
-### 5. 批量升级
+### 5. 全部升级
 
-1. 使用 AskUserQuestion（multiSelect: true）让用户选择多个插件
-2. 统一询问升级幅度
-3. 逐个执行升级并同步
+1. 统一询问升级幅度
+2. 对 wok 和 wok-kit 逐个执行升级并同步
 
 ## 版本号计算规则
 
