@@ -27,7 +27,21 @@ plugins/<name>/.claude-plugin/plugin.json
 
 ## 工作流程
 
-### 1. 确定操作类型
+### 0. 调用模式
+
+| 模式 | 触发方式 | 行为 |
+|------|---------|------|
+| **交互模式** | 用户直接调用 | 询问操作类型和升级幅度 |
+| **静默模式** | wok-commit 传入插件名和升级幅度 | 跳过询问，直接执行升级 |
+
+静默模式输入：`wok-manage-version <plugin-name> <bump-level>`
+
+- `<plugin-name>`: `wok` 或 `wok-kit`
+- `<bump-level>`: `patch`、`minor` 或 `major`
+
+静默模式执行：按指定幅度升级插件版本 + marketplace plugins 条目 + marketplace metadata.version（minor），输出变更信息后结束。
+
+### 1. 确定操作类型（仅交互模式）
 
 使用 AskUserQuestion 询问用户意图：
 

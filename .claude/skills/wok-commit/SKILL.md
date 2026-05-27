@@ -1,11 +1,11 @@
 ---
 name: wok-commit
-description: 规范化 commit message 格式，支持关联 issue 自动关闭。Use when 用户要求 commit、提交代码、或规范 commit message。
+description: 规范化 commit message 格式，支持关联 issue 自动关闭，自动升级插件版本。Use when 用户要求 commit、提交代码、或规范 commit message。
 ---
 
 # wok Commit
 
-规范化 commit message 格式，支持关联 GitHub/GitLab issue 自动关闭。
+规范化 commit message 格式，支持关联 GitHub/GitLab issue 自动关闭，自动升级插件版本。
 
 ## Commit Message 格式
 
@@ -53,7 +53,21 @@ Closes #<issue1>, closes #<issue2>
 - 使用检测到的语言编写 description
 - 格式: `<type>(<scope>): <description>`
 
-### 4. 自动关联 Issue
+### 4. 自动升级插件版本
+
+**触发条件**：暂存文件中包含 `plugins/wok/` 或 `plugins/wok-kit/` 下的文件。**不满足则跳过，不询问。**
+
+**执行步骤**：
+
+1. 检测哪些插件被修改：
+   - 暂存文件包含 `plugins/wok/**` → wok
+   - 暂存文件包含 `plugins/wok-kit/**` → wok-kit
+2. 根据 commit type 推断升级幅度：`feat` → minor，其他 → patch，上下文含 "breaking" → major
+3. 委托 `wok-manage-version` 执行版本升级（同步更新 plugin.json 和 marketplace.json）
+4. 记录版本变更信息，用于输出摘要
+5. `git add` 修改的版本文件，纳入本次提交
+
+### 5. 自动关联 Issue
 
 从上下文中扫描 issue 关联信号，**无信号则跳过，不询问**。
 
@@ -75,12 +89,12 @@ Closes #42, closes #13
 
 **未匹配时**：直接进入提交，不询问。
 
-### 5. 执行提交
+### 6. 执行提交
 
 - 运行 `git commit -m "<message>"`
 - 获取提交 ID
 
-### 6. 输出变更摘要
+### 7. 输出变更摘要
 
 ## 控制台输出格式
 
@@ -93,10 +107,16 @@ Closes #42, closes #13
 - <修改点2>
 - ...
 
+版本升级:
+- wok 1.0.0 → 1.1.0 (minor)
+- marketplace 2.0.0 → 2.1.0
+
 关联 issue: #123, #122（可选）
 
 <git stat 输出>
 ```
+
+无插件变更时不显示"版本升级"区域。
 
 ### 示例
 
@@ -108,6 +128,10 @@ Closes #42, closes #13
 - 新增用户认证模块
 - 修复 token 验证逻辑
 
+版本升级:
+- wok 1.0.0 → 1.0.1 (patch)
+- marketplace 2.0.0 → 2.1.0
+
 关联 issue: #123, #124
 
 5 files changed, 120 insertions(+), 30 deletions(-)
@@ -117,6 +141,8 @@ Closes #42, closes #13
 
 | 变更路径 | Scope 示例 |
 |----------|-----------|
+| `plugins/wok/**` | `wok` |
+| `plugins/wok-kit/**` | `wok-kit` |
 | `src/auth/*` | `auth` |
 | `src/api/user.ts` | `api` |
 | `tests/*` | `test` |
