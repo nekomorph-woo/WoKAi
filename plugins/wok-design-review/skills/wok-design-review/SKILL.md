@@ -32,6 +32,18 @@ pipeline:
 
 3 项聚焦检查（详见 reference/check-spec.md）：
 
+**锚点覆盖检查**使用脚本自动执行：
+
+```bash
+python3 plugins/wok-design-review/scripts/check_anchors.py <phase-dir>
+```
+
+- exit code 0：全部通过
+- exit code 2：`[SECURITY]` 缺口或 `[EXCLUSION]` 违规，输出报告中的 🚨 项转为 🔴 finding
+- ⚠️ 项转为 🟡 finding
+
+脚本未覆盖的接口一致性和依赖方向检查，由 AI 逐模块审查。
+
 | 检查项 | 内容 | 严重度分级 |
 |--------|------|:----------:|
 | **接口一致性** | 跨模块调用的参数类型、返回值、异常是否对齐 | 🔴/🟡/🟢 |

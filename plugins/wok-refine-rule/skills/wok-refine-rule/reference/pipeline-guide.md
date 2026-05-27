@@ -14,7 +14,9 @@
 | 小功能（1-2 文件） | `wok-define` → `wok-implement` | 一点设计 + 直接写 |
 | 小功能（有设计存量） | `wok-plan` → `wok-implement` | 设计已有，翻译为执行步骤 |
 | 新模块（单个） | `wok-define` → `wok-design` → `wok-implement` | 单模块跳过批量 |
-| 大功能（多模块） | `wok-define` → `wok-design` → `wok-design-review` → `wok-plan` → `wok-implement` | 完整管道 |
+| 大功能（多模块） | `wok-define` → `wok-design` → `wok-design-review` → `wok-plan` → `wok-implement` → `wok-code-review` | 完整管道 |
+| 实现后审查 | `wok-code-review` | 独立审查变更质量 |
+| 审查后深度分析 | `wok-code-review` → `wok-cr-insight` | 先审查再分析 Advisory 根因 |
 | 从零规划 | `wok-idea` → `wok-define` → ... | 先发散再定义 |
 
 ## 灵活入口原则
@@ -44,3 +46,7 @@
 | `wok-design` | 拆模块 + 设计接口 + 记录决策 | 需要拆分和设计时 |
 | `wok-design-review` | 交叉验证一致性 | 多模块设计完成后 |
 | `wok-plan` | 翻译为编码执行步骤 | 设计已就绪，准备写代码时 |
+| `wok-implement` | TDD 驱动开发（RED-GREEN-REFACTOR） | 有执行计划或直接编码时 |
+| `wok-code-review` | 多 agent 并行代码审查 | 实现完成后审查变更质量 |
+| `wok-cr-insight` | 分析 Advisory 根因 + 修改方案 | 审查报告有 🟡 需深入分析时 |
+| `zap` | 规范化 commit message，关联 issue | 审查通过后提交 |

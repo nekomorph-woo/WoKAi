@@ -51,12 +51,29 @@
 | 维度 | 检查方式 |
 |------|----------|
 | 锚点覆盖 | 逐条检查设计锚点，哪些模块响应了哪些锚点 |
+| 锚点类型区分 | `[SECURITY]` 未认领报 🚨 高优先级；`[EFFECT]`/`[NECESSITY]` 未认领报 ⚠️ |
+| 排除违规 | `[EXCLUSION]` 锚点关键词扫描模块接口/决策，命中报 🚨 |
 | 故事覆盖 | 逐条检查用户故事，哪些模块负责实现 |
 | 孤立模块 | 是否有模块不被任何用户故事需要 |
 | 缺失模块 | 是否有用户故事没有对应模块负责 |
 
+**执行方式**：
+
+运行脚本提取并验证锚点认领：
+
+```bash
+python3 plugins/wok-design-review/scripts/check_anchors.py <phase-dir>
+```
+
+脚本自动完成：
+1. 从 `_define.md` 解析锚点，按 `[EFFECT]`/`[SECURITY]`/`[NECESSITY]`/`[EXCLUSION]` 分组
+2. 扫描各模块 `decisions.md` 的 `## 锚点认领` 区，提取认领关系
+3. `[EFFECT]`/`[SECURITY]`/`[NECESSITY]` 检查是否有至少一个模块认领
+4. `[EXCLUSION]` 提取关键词，扫描模块 `design.md` 和 `decisions.md` 的接口/决策内容
+5. 输出结构化报告，exit code 2 表示存在 SECURITY 缺口或 EXCLUSION 违规
+
 **严重度**：
 
-- 🔴 设计锚点无模块响应、用户故事无模块负责
-- 🟡 存在孤立模块、模块职责重叠
+- 🔴 `[SECURITY]` 锚点无模块认领、`[EXCLUSION]` 关键词命中（违规）、用户故事无模块负责
+- 🟡 `[EFFECT]`/`[NECESSITY]` 锚点无模块认领、存在孤立模块、模块职责重叠
 - 🟢 验收标准与接口定义不完全对齐

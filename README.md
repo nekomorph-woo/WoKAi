@@ -19,6 +19,8 @@ wok-plan             翻译为编码步骤
        │
 wok-implement        TDD 驱动开发
        │
+wok-code-review      多 agent 并行代码审查
+       │
 zap                  规范化提交
 ```
 
@@ -37,6 +39,7 @@ zap                  规范化提交
 | `wok-design-review` | 交叉验证模块设计的一致性和完整性 |
 | `wok-plan` | 将模块设计翻译为编码执行计划 |
 | `wok-implement` | TDD 驱动开发（RED-GREEN-REFACTOR） |
+| `wok-code-review` | 多 agent 并行代码审查，自动修复 🔴🟠 问题 |
 | `zap` | 规范化 commit message，关联 issue |
 
 ### 辅助技能
@@ -51,6 +54,8 @@ zap                  规范化提交
 | `wok-access-hold` | 管理文件排除规则，保护敏感文件 |
 | `write-a-skill` | 创建符合规范的新技能 |
 | `wok-dashboard` | 部署交互式文档 dashboard，可视化阅读管道产出 |
+| `wok-cr-insight` | 分析审查报告 Advisory 根因，追加修改方案 |
+| `wok-apply-remarks` | 处理 pipeline 备注，修改文档并传播影响 |
 
 ## 安装
 
