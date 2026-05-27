@@ -1,4 +1,0 @@
-{"id": "rem_f0e8312b", "type": "decision", "state": "deferred", "content": "234234", "refs": [], "createdAt": "2026-05-24T21:39:36+0800", "updatedAt": "2026-05-24T21:39:40+0800"}
-{"id": 1779619279630, "type": "decision", "state": "open", "content": "3", "refs": [], "createdAt": "2026-05-24T18:41:19+0800", "updatedAt": "2026-05-24T19:49:28+0800"}
-{"id": 1779619278738, "type": "decision", "state": "rejected", "content": "2", "refs": [], "createdAt": "2026-05-24T18:41:18+0800", "updatedAt": "2026-05-24T19:52:48+0800", "appliedBy": "claude-code", "impact": "minor", "summary": "test update", "changedFiles": ["test.md"], "staleDownstream": ["downstream.md"]}
-{"id": 1779619277769, "type": "decision", "state": "open", "content": "1", "refs": [], "createdAt": "2026-05-24T18:41:17+0800", "updatedAt": "2026-05-24T19:51:11+0800"}
