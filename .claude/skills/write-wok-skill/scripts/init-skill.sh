@@ -88,40 +88,17 @@ else
         exit 1
     fi
 
-    # 创建三层目录结构
+    # 创建目录结构（参考 .claude/rules/plugin-structure.md）
     mkdir -p "$TARGET_DIR/.claude-plugin"
-    mkdir -p "$TARGET_DIR/commands"
     mkdir -p "$TARGET_DIR/skills/$SKILL_NAME/reference"
-    mkdir -p "$TARGET_DIR/skills/$SKILL_NAME/examples"
-    mkdir -p "$TARGET_DIR/skills/$SKILL_NAME/scripts"
 
     # 创建 plugin.json
     cat > "$TARGET_DIR/.claude-plugin/plugin.json" << EOF
 {
   "name": "$SKILL_NAME",
+  "description": "插件描述",
   "version": "0.1.0"
 }
-EOF
-
-    # 创建 commands 入口
-    cat > "$TARGET_DIR/commands/$SKILL_NAME.md" << EOF
----
-name: $SKILL_NAME
-description: 能力简述。Use when [具体触发条件]。
----
-
-执行 [$SKILL_NAME 技能](../skills/$SKILL_NAME/SKILL.md) 的完整流程。
-
-**定位技能文件**：
-
-1. 使用 Bash 执行：
-   \`\`\`bash
-   ls ~/.claude/plugins/cache/wok/$SKILL_NAME/*/skills/$SKILL_NAME/SKILL.md
-   \`\`\`
-
-2. 使用 Read 工具读取输出的路径
-
-3. 执行技能文件中的所有指令
 EOF
 
     # 创建 SKILL.md
@@ -146,28 +123,20 @@ description: 能力简述。Use when [具体触发条件]。
 详见 [reference/](reference/)。
 EOF
 
-    # 创建 .gitkeep 保持空目录
-    touch "$TARGET_DIR/skills/$SKILL_NAME/reference/.gitkeep"
-    touch "$TARGET_DIR/skills/$SKILL_NAME/examples/.gitkeep"
-    touch "$TARGET_DIR/skills/$SKILL_NAME/scripts/.gitkeep"
-
     echo "✓ Marketplace 插件已创建: $TARGET_DIR"
     echo ""
     echo "目录结构:"
     echo "  $TARGET_DIR/"
     echo "  ├── .claude-plugin/"
     echo "  │   └── plugin.json"
-    echo "  ├── commands/"
-    echo "  │   └── $SKILL_NAME.md"
     echo "  └── skills/"
     echo "      └── $SKILL_NAME/"
     echo "          ├── SKILL.md"
-    echo "          ├── reference/"
-    echo "          ├── examples/"
-    echo "          └── scripts/"
+    echo "          └── reference/"
     echo ""
     echo "下一步:"
     echo "  1. 编辑 skills/$SKILL_NAME/SKILL.md 填充插件内容"
-    echo "  2. 更新 commands/$SKILL_NAME.md 的 description"
+    echo "  2. 更新 .claude-plugin/plugin.json 的 description"
     echo "  3. 在 .claude-plugin/marketplace.json 中添加插件条目"
+    echo "  4. 按需创建 agents/（插件根目录）或 scripts/（插件根目录）"
 fi
