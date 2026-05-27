@@ -54,12 +54,12 @@
 }
 ```
 
-## WoKAi 项目特有区分：write-wok-skill vs write-a-skill
+## wok 项目特有区分：write-wok-skill vs write-a-skill
 
 | | `write-wok-skill` | `write-a-skill` |
 |---|---|---|
 | **位置** | `.claude/skills/write-wok-skill/` | `plugins/wok-kit/skills/write-a-skill/` |
-| **性质** | WoKAi **项目内部**技能 | 对外分发的**通用**插件 skill |
+| **性质** | wok **项目内部**技能 | 对外分发的**通用**插件 skill |
 | **用途** | 创建 wok 项目特有的技能和 marketplace 插件 | 帮助**任何** Claude Code 用户创建自己的 skill/plugin |
 | **内容差异** | 包含 wok 管道技能规范、marketplace 注册流程、wok 特有约定 | 通用技能编写指南，不包含 wok 项目特有概念 |
 
