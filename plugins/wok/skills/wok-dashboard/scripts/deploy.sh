@@ -14,7 +14,7 @@ RESTART=false
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ASSETS_DIR="$SCRIPT_DIR/../assets"
-WOK_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
+WOK_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 DASHBOARD_DIR="$HOME/.claude/wok-dashboard"
 SERVER_STATE="$DASHBOARD_DIR/server.json"
 SERVER_SCRIPT="$DASHBOARD_DIR/_server.py"

@@ -27,3 +27,6 @@ __pycache__/
 # Claude Code
 .claude/scheduled_tasks.json
 .claude/worktrees/
+
+# Pipeline artifacts
+plans/

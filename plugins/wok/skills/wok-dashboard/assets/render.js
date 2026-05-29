@@ -523,7 +523,7 @@
     if (!review) return false;
     const rounds = parseReviewReport(review.body);
     const latest = rounds.reduce((a, b) => b.num > a.num ? b : a, rounds[0] || {});
-    return latest.status === 'converged';
+    return latest.status === 'converged' || latest.status === 'analyzed';
   }
 
   function computeNextAction_feat() {
@@ -626,8 +626,14 @@
   function computeNextAction_cr() {
     const reviewKey = findFile('_review.md');
     if (!reviewKey) return { action: '启动审查', detail: '运行 wok-code-review' };
-    if (isReviewConverged()) return { action: '审查完成', detail: 'Review 已收敛' };
-    return { action: '深入分析', detail: '运行 wok-cr-insight' };
+
+    const review = state.parsed.get(reviewKey);
+    const rounds = parseReviewReport(review.body);
+    const latest = rounds.reduce((a, b) => b.num > a.num ? b : a, rounds[0] || {});
+
+    if (latest.status === 'analyzed') return { action: '审查完成', detail: '所有问题已分析' };
+    if (latest.status === 'converged') return { action: '审查完成', detail: 'Review 已收敛' };
+    return { action: '深入分析', detail: '运行 wok-cr-insight --types all' };
   }
 
   function renderGlobalStatusCard() {
@@ -1435,6 +1441,7 @@
         let status = '';
         let badgeClass = '';
         if (statusText.includes('Converged')) { status = 'converged'; badgeClass = 'converged'; }
+        else if (statusText.includes('Analyzed')) { status = 'analyzed'; badgeClass = 'analyzed'; }
         else if (statusText.includes('Max rounds')) { status = 'max-rounds'; badgeClass = 'max-rounds'; }
         currentRound = { num, status, badgeClass, meta: {}, sections: {} };
         continue;
@@ -1575,7 +1582,7 @@
       html += '<div class="review-round-header">';
       html += `<span class="review-round-title">Round ${round.num}</span>`;
       if (round.badgeClass) {
-        html += `<span class="review-round-badge ${round.badgeClass}">${esc(round.status === 'converged' ? 'Converged' : 'Max rounds')}</span>`;
+        html += `<span class="review-round-badge ${round.badgeClass}">${esc(round.status === 'converged' ? 'Converged' : round.status === 'analyzed' ? 'Analyzed' : 'Max rounds')}</span>`;
       }
       html += '</div>';
 
@@ -1663,9 +1670,7 @@
 
     if (f.details.length) {
       html += '<div class="review-finding-body">';
-      for (const d of f.details) {
-        html += `<p>${esc(d)}</p>`;
-      }
+      html += renderMd(f.details.join('\n\n'), f.file || '');
       html += '</div>';
     }
 

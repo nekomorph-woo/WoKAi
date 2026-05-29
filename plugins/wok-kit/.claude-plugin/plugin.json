@@ -1,5 +1,5 @@
 {
   "name": "wok-kit",
-  "description": "辅助工具集：文件保护、规则管理、技能创建、规范化提交",
-  "version": "1.0.1"
+  "description": "\u8f85\u52a9\u5de5\u5177\u96c6\uff1a\u6587\u4ef6\u4fdd\u62a4\u3001\u89c4\u5219\u7ba1\u7406\u3001\u6280\u80fd\u521b\u5efa\u3001\u89c4\u8303\u5316\u63d0\u4ea4",
+  "version": "1.1.0"
 }

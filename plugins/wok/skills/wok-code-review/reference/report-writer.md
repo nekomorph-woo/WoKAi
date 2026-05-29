@@ -125,6 +125,7 @@ simplify_count: <positive-int>
 | 标记 | 含义 | 触发条件 |
 |------|------|----------|
 | `✅ Converged` | 无 🔴🟠 问题 | 所有 Blocking/Severe 已修复 |
+| `Analyzed` | cr-insight 分析完成 | cr-insight 在 cr 管道独立模式下写入 |
 | `⚠️ Max rounds` | 达到迭代上限 | `max_rounds_reached: true` |
 | 无标记 | 仍有问题待修复 | 有未解决的 🔴🟠 |
 
@@ -140,6 +141,7 @@ simplify_count: <positive-int>
 | 🟡 重复出现 | 不写入 Open，仅在元数据中计数 |
 | 🟡 不再出现 | 自然消失 |
 | 收敛 | 标题追加 `✅ Converged` |
+| cr-insight 分析完成 | 标题更新为 `Analyzed`（仅 cr 管道，由 cr-insight 写入） |
 | 迭代上限 | 标题追加 `⚠️ Max rounds`，元数据追加 `⚠️ 达到迭代上限，剩余问题降级为 Advisory` |
 
 ## 🟡 去重机制

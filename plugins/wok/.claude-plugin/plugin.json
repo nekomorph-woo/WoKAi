@@ -1,5 +1,5 @@
 {
   "name": "wok",
-  "description": "需求到代码的完整管道：定义、设计、校验、计划、实现、审查、部署",
-  "version": "1.0.0"
+  "description": "\u9700\u6c42\u5230\u4ee3\u7801\u7684\u5b8c\u6574\u7ba1\u9053\uff1a\u5b9a\u4e49\u3001\u8bbe\u8ba1\u3001\u6821\u9a8c\u3001\u8ba1\u5212\u3001\u5b9e\u73b0\u3001\u5ba1\u67e5\u3001\u90e8\u7f72",
+  "version": "1.1.0"
 }

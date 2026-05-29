@@ -1909,6 +1909,12 @@ main {
   color: #fff;
 }
 
+.review-round-badge.analyzed {
+  border-color: #3B82F6;
+  background: #3B82F6;
+  color: #fff;
+}
+
 .review-round-meta {
   font-family: var(--font-mono);
   font-size: 11px;

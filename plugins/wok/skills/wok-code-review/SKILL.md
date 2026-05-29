@@ -98,23 +98,28 @@ pipeline:
    - `findings_open`：本轮所有 🔴 + 🟠 + 去重后的 🟡
    - `findings_advisory_new`：本轮新增的 🟡（仅首次出现）
 
-### Stage 3: 自动修复 + 验证循环
+### Stage 3: 两阶段修复 + 验证循环
 
 **`--no-fix` 模式下跳过此阶段。**
 
 循环执行以下步骤，直到收敛或达到 `max-rounds`：
 
-1. **逐个修复 🔴🟠**：
+1. **洞察分析 🔴🟠**：
+   - 执行 cr-insight 的分析流程，参数为 `--types red,orange`
+   - 每个 🔴🟠 获得结构化洞察（根因 + 修改方案 + 一致性评估）
+   - cr-insight 分析失败 → 跳过该 finding 的洞察，降级为直接修复
+2. **基于洞察修复 🔴🟠**：
+   - 参考洞察中的修改方案，结合原始 finding 描述执行代码修改
    - 管道模式下，修复前对照 PRD 设计锚点验证方向
-   - 执行修复，记录 `fix_applied`
-2. **触发 simplify**：检查 finding 的 `优化维度` 字段
+   - 记录 `fix_applied`
+3. **触发 simplify**：检查 finding 的 `优化维度` 字段
    - 非空 → per-file 调用 simplify agent（管道内调用模式，静默执行）
    - 记录 `simplified: true`
-3. **追加验证**：对已修复文件重新执行 Stage 1（仅涉及修改文件的 agent）
-4. **收敛判断**：
+4. **追加验证**：对已修复文件重新执行 Stage 1（仅涉及修改文件的 agent）
+5. **收敛判断**：
    - 验证轮次无新 🔴🟠 → `converged = true`，退出循环
    - 有新 🔴🟠 → 继续修复
-5. **迭代上限**：达到 `max-rounds` → `max_rounds_reached = true`，剩余 🔴🟠 降级为 🟡
+6. **迭代上限**：达到 `max-rounds` → `max_rounds_reached = true`，剩余 🔴🟠 降级为 🟡
 
 **修复失败处理**：
 - 🔴 修复失败 → 阻塞，升级用户确认
@@ -135,9 +140,9 @@ pipeline:
 
 ### Stage 5: 洞见生成
 
-触发 `wok-cr-insight` 分析所有 🟡 问题。cr-insight 在 `_review.md` 的每个 🟡 问题下方追加根因分析和修改方案。
+触发 `wok-cr-insight` 分析 🟡 问题。cr-insight 在 `_review.md` 的每个 🟡 问题下方追加根因分析和修改方案。
 
-调用方式：直接执行 cr-insight 的分析流程（搜索 `_review.md` → 解析 🟡 → 追加分析）。
+调用方式：直接执行 cr-insight 的分析流程，参数为 `--types yellow`。此时 🔴🟠 已在 Stage 3 获得洞察并修复，此步骤补全 🟡 分析。
 
 ## 异常处理
 
@@ -145,6 +150,7 @@ pipeline:
 |------|------|
 | 无变更文件 | 输出"无变更可审查"，不产出报告 |
 | 达到 max-rounds 未收敛 | 剩余 🔴🟠 降级为 🟡，标记"达到迭代上限" |
+| cr-insight 分析失败 | 跳过该 finding 的洞察，降级为直接修复 |
 | 修复失败（🔴） | 升级用户确认，阻塞管道 |
 | 修复失败（🟠） | 标记用户确认，不阻塞 |
 | simplify 语义变更风险 | 跳过该文件，记录原因 |
