@@ -1,19 +1,28 @@
 ---
 name: wok-issue
-description: 调查问题根因并创建带 TDD 修复计划的 issue。Use when 用户报告 bug、要求创建 issue、提到 "wok-issue" / "排查" / "诊断"。
+description: 调查问题根因，生成本地 _issue.md 产物，并按平台条件创建远程 issue。Use when 用户报告 bug、要求创建 issue、提到 "wok-issue" / "排查" / "诊断"。
 pipeline:
   upstream: []
-  downstream: [wok-implement, wok-design-review]
+  downstream: [wok-implement]
   gate: false
-  output: none
+  output: document
   adaptive: false
 ---
 
 # Triage Issue
 
-调查问题根因，创建包含 TDD 修复计划的 issue。
+调查问题根因，生成本地 `_issue.md`，按平台条件创建远程 issue。
 
 ## 执行流程
+
+### 0. 确定 system-name
+
+生成 `fix-` 前缀的 system-name：
+
+- 从问题描述提取关键词（模块名、错误类型、组件名）
+- 格式：`fix-<关键词>`（如 `fix-auth-401`、`fix-payment-timeout`）
+- 使用 AskUserQuestion 让用户确认生成的 system-name，或提供自定义名称
+- 创建目录 `plans/fix-<system-name>/`
 
 ### 1. 捕获问题
 
@@ -83,7 +92,7 @@ pipeline:
    - "跳过审查，直接创建 Issue"
 3. **未找到**：静默跳过，继续 §4
 
-审查发现追加到 Issue body 的"根因分析"节中。
+审查发现追加到 `_issue.md` 的"根因分析"节中。
 
 ### 4. 设计 TDD 修复计划
 
@@ -107,56 +116,58 @@ pipeline:
 
 | 条件 | 判断 | 后续路径 |
 |------|------|----------|
-| 修复 ≤ 3 个文件，无架构变更 | 简单修复 | 直接创建 Issue，后续 `/wok-implement` |
-| 修复 > 3 个文件，或涉及模块边界 | 需要设计 | 创建 Issue 后建议用户走 `wok-define` → `wok-design` → `wok-plan` → `/wok-implement` |
-| 根因指向架构缺陷 | 需要重构 | 创建 Issue 后建议用户先走设计管线 `wok-define` → `wok-design` → `wok-plan` → `/wok-implement` |
+| 修复 ≤ 3 个文件，无架构变更 | 简单修复 | 生成本地产物，后续 `/wok-implement` |
+| 修复 > 3 个文件，或涉及模块边界 | 需要设计 | 生成本地产物后建议用户走 `wok-define` → `wok-design` → `wok-plan` → `/wok-implement` |
+| 根因指向架构缺陷 | 需要重构 | 生成本地产物后建议用户先走设计管线 |
 
-简单修复路径直接进入步骤 6。需要设计的路径创建 Issue 时在 Issue 体中标注。
+简单修复路径直接进入步骤 6。需要设计的路径在 `_issue.md` 中标注建议管道路径。
 
-### 6. 创建 Issue
+### 6. 生成本地 `_issue.md`
 
-使用已判断的 CLI 创建 issue：
-
-- GitHub: `gh issue create --title "..." --body "..."` 或 `gh issue create --file -` (从 stdin)
-- GitLab: `glab issue create --title "..." --description "..."` 或 `glab issue create --file -` (从 stdin)
-
-**DO NOT** 在创建前请求用户审阅。直接创建，创建后输出 issue URL 和根因摘要。
-
-## Issue 模板
+产出 `plans/fix-<system-name>/_issue.md`：
 
 ```markdown
+---
+status: draft
+freshness: fresh
+intent: action
+scope: global
+depends: []
+changed: 初始版本
+wok:
+  feature: <system-name>
+  stage: issue
+  upstream_hashes: {}
+---
+
+> **做什么**：记录 bug 根因分析和 TDD 修复计划
+> **怎么做**：探索诊断 → 根因定位 → TDD 循环设计
+> **阻塞**：无
+
 ## 修复范围
 
-> ⚠️ 需要设计 / 简单修复
+> 简单修复 / ⚠️ 需要设计
 > （需要设计时标注建议的管道路径）
 
 ## 问题
 
-描述 bug 或 issue：
-- 实际行为
-- 预期行为
-- 复现步骤（如适用）
+- **实际行为**：
+- **预期行为**：
+- **复现步骤**：
 
 ## 根因分析
 
-调查发现：
-- 涉及的代码路径
-- 当前代码失败原因
-- 相关因素
-
-**DO NOT** 包含具体文件路径、行号或实现细节。描述模块、行为和契约。
+- **代码路径**：
+- **失败原因**：
+- **问题类型**：回归缺陷 / 功能缺失 / 设计缺陷
 
 ## TDD 修复计划
-
-RED-GREEN 循环列表：
 
 1. **RED**: 编写测试验证 [预期行为]
    **GREEN**: [最小变更使其通过]
 
 2. **RED**: 编写测试验证 [下一行为]
    **GREEN**: [最小变更使其通过]
-
-...
 
 **REFACTOR**: [全部测试通过后的清理工作]
 
@@ -167,3 +178,32 @@ RED-GREEN 循环列表：
 - [ ] 新测试全部通过
 - [ ] 现有测试不受影响
 ```
+
+### 7. 创建远程 Issue（平台条件化）
+
+判断平台：运行 `git remote get-url origin`
+
+**GitHub**（URL 包含 `github.com`）：
+
+1. 创建远程 issue：`gh issue create --title "..." --body "..." --label "bug"`
+2. 在 `_issue.md` 末尾追加：
+
+```markdown
+## 远程 Issue
+
+- URL: <issue_url>
+```
+
+**GitLab**（URL 包含 `gitlab.com` 或私有 GitLab 域名）：
+
+1. **DO NOT** 创建远程 issue
+2. 仅保留本地 `_issue.md` 产物
+3. 输出提示："本地 _issue.md 已生成。GitLab issue 需手动创建。"
+
+**完成**：输出 `_issue.md` 路径 + 远程 issue URL（如有）+ 根因摘要。
+
+## 约束
+
+- **DO NOT** 包含具体文件路径、行号或实现细节 — 描述模块、行为和契约
+- **DO NOT** 在创建 `_issue.md` 前请求用户审阅 — 直接生成，用户可在 Dashboard 中审批
+- **DO NOT** 在 GitLab 平台创建远程 issue — 仅生成本地文档

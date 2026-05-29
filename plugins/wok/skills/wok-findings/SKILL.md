@@ -78,9 +78,33 @@ pipeline:
 - 标注每个代码区域是否有对应的设计文档
 - 无设计文档的代码区域标记为 ⚠️ — 后续 `wok-design` 应优先覆盖
 
-### 4. 持久化发现（可选）
+### 4. 持久化发现（延迟定型）
 
-评估探索规模：
+wok-findings 是唯一有歧义的入口（既可独立探索，也可作为 `feat-s-` 前置步骤）。
+
+**不立即创建目录**。评估探索规模后，通过 AskUserQuestion 询问用户意图：
+
+```
+探索完成。接下来：
+- 📂 保存为探索管道（exp-） → 创建 plans/exp-<name>/_findings.md
+- 🛠️ 定义功能（feat-s-） → 转交 wok-define，_findings.md 存入 plans/feat-s-<name>/
+- 🐛 修复问题（fix-） → 转交 wok-issue，产物存入 plans/fix-<name>/
+```
+
+**选"探索管道"**：
+- 生成 `exp-` 前缀的 system-name（如 `exp-payment-module`）
+- 创建 `plans/exp-<name>/` 目录并保存 `_findings.md`
+
+**选"定义功能"**：
+- 探索结果保留在对话上下文中
+- 调用 `wok-define`，由 wok-define 创建 `plans/feat-s-<name>/` 目录
+- `_findings.md` 和 `_define.md` 一并存入该目录
+
+**选"修复问题"**：
+- 探索结果保留在对话上下文中
+- 调用 `wok-issue`，由 wok-issue 创建 `plans/fix-<name>/` 目录
+
+评估探索规模（用于决定是否自动推荐持久化）：
 
 | 条件（满足任一） | 判定 |
 |------|------|
@@ -89,14 +113,8 @@ pipeline:
 | 代码→文档映射存在 ⚠️ 项 | 大探索 |
 | 均不满足 | 小探索 |
 
-**大探索**：自动生成 `_findings.md`。
-
-保存路径判断（按优先级）：
-1. 对话上下文中用户提及的 system-name → `plans/<system-name>/_findings.md`
-2. `plans/` 下仅一个子目录 → 使用该目录
-3. 均不满足 → AskUserQuestion 询问保存位置
-
-**小探索**：使用 AskUserQuestion 询问用户是否需要生成。
+**大探索**：直接弹出意图选择（不跳过持久化）。
+**小探索**：额外提供"不保存"选项。
 
 **_findings.md 输出格式**：
 

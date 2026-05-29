@@ -7,6 +7,99 @@
     ? `http://127.0.0.1:${SERVER_PORT}/${SYSTEM_NAME}`
     : '/' + SYSTEM_NAME;
 
+  // ── Pipeline Type Detection ──
+  function detectPipelineType(name) {
+    if (name.startsWith('feat-s-')) return 'feat-s';
+    if (name.startsWith('feat-')) return 'feat';
+    if (name.startsWith('fix-')) return 'fix';
+    if (name.startsWith('exp-')) return 'exp';
+    if (name.startsWith('cr-')) return 'cr';
+    return 'feat';
+  }
+  const PIPELINE_TYPE = detectPipelineType(SYSTEM_NAME);
+
+  const PIPELINE_PHASES = {
+    feat: [
+      { name: 'define', label: '需求', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
+      { name: 'registry', label: '设计', test: (n) => n.includes('modules/') },
+      { name: 'check', label: '校验', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
+      { name: 'plan', label: '执行', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
+      { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    'feat-s': [
+      { name: 'define', label: '需求', test: (n) => /^_define/.test(n) },
+      { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    fix: [
+      { name: 'issue', label: '问题', test: (n) => n === '_issue.md' || n.endsWith('/_issue.md') },
+      { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    exp: [
+      { name: 'findings', label: '探索', test: (n) => /^_findings/.test(n) },
+      { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    cr: [
+      { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+  };
+
+  const PIPELINE_TABS = {
+    feat: ['overview', 'requirements', 'design', 'check', 'execution', 'review'],
+    'feat-s': ['overview', 'requirements', 'review'],
+    fix: ['overview', 'issue', 'review'],
+    exp: ['overview', 'findings', 'review'],
+    cr: ['overview', 'review'],
+  };
+
+  const PIPELINE_DOC_GROUPS = {
+    feat: [
+      { title: '需求文档', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
+      { title: '模块设计', test: (n) => n.includes('modules/') },
+      { title: '校验文档', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
+      { title: '执行文档', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
+      { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    'feat-s': [
+      { title: '需求文档', test: (n) => /^_define/.test(n) },
+      { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    fix: [
+      { title: '问题文档', test: (n) => n === '_issue.md' || n.endsWith('/_issue.md') },
+      { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    exp: [
+      { title: '探索文档', test: (n) => /^_findings/.test(n) },
+      { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+    cr: [
+      { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
+    ],
+  };
+
+  const PIPELINE_LABELS = {
+    feat: 'feature:', 'feat-s': 'small-feature:', fix: 'fix:',
+    exp: 'explore:', cr: 'review:',
+  };
+
+  const TAB_LABELS = {
+    overview: '概览', requirements: '需求', design: '设计',
+    check: '校验', execution: '执行', review: '审查',
+    issue: '问题', findings: '探索',
+  };
+
+  function getPipelinePhases() { return PIPELINE_PHASES[PIPELINE_TYPE] || PIPELINE_PHASES.feat; }
+  function getPipelineTabs() { return PIPELINE_TABS[PIPELINE_TYPE] || PIPELINE_TABS.feat; }
+  function getPipelineDocGroups() { return PIPELINE_DOC_GROUPS[PIPELINE_TYPE] || PIPELINE_DOC_GROUPS.feat; }
+
+  function validatePipelineType() {
+    const warnings = [];
+    if (PIPELINE_TYPE === 'exp' && findFile('_define.md'))
+      warnings.push('exp- 管道中存在 _define.md，建议迁移到 feat-s- 管道');
+    if (PIPELINE_TYPE === 'fix' && findFile('modules/_registry.md'))
+      warnings.push('fix- 管道中存在模块设计，可能需要升级为 feat- 管道');
+    return warnings;
+  }
+
   // ── State ──
   const state = {
     files: new Map(),      // fileName -> raw text
@@ -228,6 +321,8 @@
       case 'check': renderCheck(); break;
       case 'execution': renderExecution(); break;
       case 'review': renderReview(); break;
+      case 'issue': renderIssue(); break;
+      case 'findings': renderFindings(); break;
     }
   }
 
@@ -365,16 +460,25 @@
   function computeFeatureStatus() {
     let hasStale = false, hasBlocking = false, hasDraft = false, allApproved = true, totalCount = 0;
     let blockingCount = 0;
+    // feat pipeline: blocking from _check.md
     const checkKey = findFile('_check.md');
     if (checkKey) {
       const check = state.parsed.get(checkKey);
       if (check) {
         const blocks = parseCheckBlocks(check.body);
         const redItems = blocks.filter(b => b.type === 'severity' && b.severity === 'red');
-        // Check if red items have open findings (not resolved)
         for (const item of redItems) {
           if (!item.text.includes('✅') && !item.text.includes('→✅')) blockingCount++;
         }
+        if (blockingCount > 0) hasBlocking = true;
+      }
+    }
+    // fix pipeline: blocking from _issue.md scope assessment
+    if (PIPELINE_TYPE === 'fix') {
+      const issueKey = findFile('_issue.md');
+      if (issueKey) {
+        const issue = state.parsed.get(issueKey);
+        if (issue && issue.body.includes('⚠️ 需要设计')) blockingCount++;
         if (blockingCount > 0) hasBlocking = true;
       }
     }
@@ -402,13 +506,33 @@
   }
 
   function computeNextAction() {
+    switch (PIPELINE_TYPE) {
+      case 'feat': return computeNextAction_feat();
+      case 'feat-s': return computeNextAction_featS();
+      case 'fix': return computeNextAction_fix();
+      case 'exp': return computeNextAction_exp();
+      case 'cr': return computeNextAction_cr();
+      default: return computeNextAction_feat();
+    }
+  }
+
+  function isReviewConverged() {
+    const reviewKey = findFile('_review.md');
+    if (!reviewKey) return false;
+    const review = state.parsed.get(reviewKey);
+    if (!review) return false;
+    const rounds = parseReviewReport(review.body);
+    const latest = rounds.reduce((a, b) => b.num > a.num ? b : a, rounds[0] || {});
+    return latest.status === 'converged';
+  }
+
+  function computeNextAction_feat() {
     const defineKey = findFile('_define.md');
     const registryKey = findFile('modules/_registry.md');
     const checkKey = findFile('_check.md');
     const planKey = findFile('_plan.md');
     const reviewKey = findFile('_review.md');
 
-    // Stale docs — find earliest-stage root cause
     const staleDocs = Object.entries(freshnessMap).filter(([, info]) => info.freshness === 'stale');
     if (staleDocs.length) {
       const stageOrder = ['_define.md', '_registry.md', '/design.md', '_check.md', '_plan.md'];
@@ -419,12 +543,10 @@
         { action: '校验结果已变更，刷新计划', detail: '运行 wok-plan --refresh' },
         { action: '执行计划已变更，重新审查', detail: '运行 wok-code-review' },
       ];
-      // Collect root causes from staleReasons
       const allReasons = new Set();
       for (const [, info] of staleDocs) {
         for (const r of (info.staleReasons || [])) allReasons.add(r);
       }
-      // Find earliest stage among root causes
       let earliestIdx = stageOrder.length;
       for (const reason of allReasons) {
         for (let i = 0; i < stageOrder.length; i++) {
@@ -439,52 +561,73 @@
       return { action: rec.action, detail: `${rec.detail} · ${staleDocs.length} 个文档过期` };
     }
 
-    // Blocking findings
     const fs = computeFeatureStatus();
     if (fs.blockingCount > 0) {
       return { action: `处理 ${fs.blockingCount} 个阻塞项`, detail: '运行 wok-design-review' };
     }
 
-    // Define not approved
     if (defineKey) {
       const p = state.parsed.get(defineKey);
       if (p?.frontmatter?.status !== 'approved') return { action: '确认需求文档', detail: '审批 _define.md' };
     }
-
-    // No registry
     if (!registryKey) return { action: '生成模块设计', detail: '运行 wok-design' };
 
-    // Check design docs
     let hasDraftDesign = false;
     for (const [name, parsed] of state.parsed) {
       if (name.includes('modules/') && parsed.frontmatter?.status !== 'approved') hasDraftDesign = true;
     }
     if (hasDraftDesign) return { action: '审阅并审批设计文档', detail: '切换到设计 tab' };
 
-    // No check
     if (!checkKey) return { action: '校验设计', detail: '运行 wok-design-review' };
-
-    // No plan
     if (!planKey) return { action: '生成执行计划', detail: '运行 wok-plan' };
 
-    // Plan not approved
     const planP = state.parsed.get(planKey);
     if (planP?.frontmatter?.status !== 'approved') return { action: '审阅并审批执行计划', detail: '切换到执行 tab' };
-
-    // Plan approved → implement
     if (planP?.frontmatter?.status === 'approved') return { action: '开始实现', detail: '运行 wok-implement' };
 
-    // Review converged
-    if (reviewKey) {
-      const review = state.parsed.get(reviewKey);
-      if (review) {
-        const rounds = parseReviewReport(review.body);
-        const latest = rounds.reduce((a, b) => b.num > a.num ? b : a, rounds[0] || {});
-        if (latest.status === 'converged') return { action: 'Feature 开发完成', detail: 'Review 已收敛' };
-      }
-    }
-
+    if (isReviewConverged()) return { action: 'Feature 开发完成', detail: 'Review 已收敛' };
     return { action: '检查管道状态', detail: '' };
+  }
+
+  function computeNextAction_featS() {
+    const staleDocs = Object.entries(freshnessMap).filter(([, info]) => info.freshness === 'stale');
+    if (staleDocs.length) return { action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL' };
+
+    const defineKey = findFile('_define.md');
+    if (!defineKey) return { action: '定义需求', detail: '运行 wok-define' };
+    const dp = state.parsed.get(defineKey);
+    if (dp?.frontmatter?.status !== 'approved') return { action: '确认需求文档', detail: '审批 _define.md' };
+    if (isReviewConverged()) return { action: '小功能完成', detail: 'Review 已收敛' };
+    return { action: '开始实现', detail: '运行 wok-implement' };
+  }
+
+  function computeNextAction_fix() {
+    const staleDocs = Object.entries(freshnessMap).filter(([, info]) => info.freshness === 'stale');
+    if (staleDocs.length) return { action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL' };
+
+    const issueKey = findFile('_issue.md');
+    if (!issueKey) return { action: '调查问题', detail: '运行 wok-issue' };
+    const ip = state.parsed.get(issueKey);
+    if (ip?.frontmatter?.status !== 'approved') return { action: '确认问题分析', detail: '审批 _issue.md' };
+    if (isReviewConverged()) return { action: '修复完成', detail: 'Review 已收敛' };
+    return { action: '开始修复', detail: '运行 wok-implement' };
+  }
+
+  function computeNextAction_exp() {
+    const staleDocs = Object.entries(freshnessMap).filter(([, info]) => info.freshness === 'stale');
+    if (staleDocs.length) return { action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL' };
+
+    const findingsKey = findFile('_findings.md');
+    if (!findingsKey) return { action: '探索代码', detail: '运行 wok-findings' };
+    if (isReviewConverged()) return { action: '优化完成', detail: 'Review 已收敛' };
+    return { action: '开始实现', detail: '运行 wok-implement' };
+  }
+
+  function computeNextAction_cr() {
+    const reviewKey = findFile('_review.md');
+    if (!reviewKey) return { action: '启动审查', detail: '运行 wok-code-review' };
+    if (isReviewConverged()) return { action: '审查完成', detail: 'Review 已收敛' };
+    return { action: '深入分析', detail: '运行 wok-cr-insight' };
   }
 
   function renderGlobalStatusCard() {
@@ -595,6 +738,16 @@
     const el = $('#tab-overview');
     let html = '';
 
+    // Pipeline type validation warnings
+    const pipelineWarnings = validatePipelineType();
+    if (pipelineWarnings.length) {
+      html += '<div class="stale-banner">';
+      html += '<div class="stale-banner-title">⚠ 管道类型提示</div>';
+      html += '<div class="stale-banner-body">';
+      for (const w of pipelineWarnings) html += `<span class="stale-banner-item">${esc(w)}</span>`;
+      html += '</div></div>';
+    }
+
     // Pipeline status — each phase shows approved ratio of its documents
     // Execution phase uses step completion + document status
     const planKey = findFile('_plan.md');
@@ -602,13 +755,7 @@
     const planSteps = planParsed ? extractSteps(planParsed.body) : [];
     const planStatus = planParsed?.frontmatter?.status === 'approved' ? 1 : 0;
 
-    const pipelinePhases = [
-      { name: 'define', label: '需求', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
-      { name: 'registry', label: '设计', test: (n) => n.includes('modules/') },
-      { name: 'check', label: '校验', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
-      { name: 'plan', label: '执行', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
-      { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
-    ];
+    const pipelinePhases = getPipelinePhases();
 
     html += '<div class="overview-section"><h2>Pipeline 状态</h2><div class="pipeline-progress">';
     for (const phase of pipelinePhases) {
@@ -670,14 +817,18 @@
       html += '</details></div>';
     }
 
-    // Brief list — grouped by category
-    const docGroups = [
-      { title: '需求文档', test: (n) => /^_define|^_roadmap|^_findings/.test(n) },
-      { title: '模块设计', test: (n) => n.includes('modules/') },
-      { title: '校验文档', test: (n) => n === '_check.md' || n.endsWith('/_check.md') },
-      { title: '执行文档', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
-      { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
-    ];
+    // Issue baseline (if _issue.md exists)
+    const issueKey = findFile('_issue.md');
+    if (issueKey) {
+      const issue = state.parsed.get(issueKey);
+      html += '<div class="overview-section"><h2>问题分析基线</h2>';
+      html += '<details class="findings-details"><summary class="findings-summary">wok-issue 调查结果</summary>';
+      html += '<div class="findings-body">' + renderMd(issue.body, issueKey) + '</div>';
+      html += '</details></div>';
+    }
+
+    // Brief list — grouped by category (per pipeline type)
+    const docGroups = getPipelineDocGroups();
     const uncategorized = { title: '其他', items: [] };
     const groups = docGroups.map(g => ({ ...g, items: [] }));
     for (const [name, parsed] of state.parsed) {
@@ -785,23 +936,13 @@
     el.querySelectorAll('.brief-item').forEach(item => {
       item.addEventListener('click', () => {
         const file = item.dataset.file;
+        const tab = fileToTab(file);
         const modMatch = file.match(/(?:^|\/)modules\/([^/]+)/);
         const modName = modMatch ? modMatch[1] : null;
-        if (modName && modName !== '_shared') {
+        if (tab === 'design' && modName && modName !== '_shared') {
           state.activeModule = modName;
-          switchTab('design');
-        } else if (file.startsWith('modules/')) {
-          state.activeModule = null;
-          switchTab('design');
-        } else if (file === '_check.md' || file.endsWith('/_check.md')) {
-          switchTab('check');
-        } else if (file === '_plan.md' || file.endsWith('/_plan.md')) {
-          switchTab('execution');
-        } else if (file === '_review.md' || file.endsWith('/_review.md')) {
-          switchTab('review');
-        } else {
-          switchTab('requirements');
         }
+        switchTab(tab);
       });
     });
     el.querySelectorAll('.module-card').forEach(card => {
@@ -851,19 +992,13 @@
           source,
         };
         const modMatch = file.match(/modules\/([^/]+)/);
-        if (modMatch && modMatch[1] !== '_shared') {
+        const targetTab = fileToTab(file);
+        if (targetTab === 'design' && modMatch && modMatch[1] !== '_shared') {
           state.activeModule = modMatch[1];
-          switchTab('design');
-        } else if (file.includes('modules/')) {
+        } else if (targetTab === 'design') {
           state.activeModule = null;
-          switchTab('design');
-        } else if (file === '_check.md' || file.endsWith('/_check.md')) {
-          switchTab('check');
-        } else if (file === '_plan.md' || file.endsWith('/_plan.md')) {
-          switchTab('execution');
-        } else {
-          switchTab('requirements');
         }
+        switchTab(targetTab);
         setTimeout(() => {
           const target = document.querySelector(`[data-source-file="${file}"][data-source-line="${line}"]`);
           if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -921,6 +1056,34 @@
       html += renderFileStatusBar(roadmapKey);
       html += renderMd(state.parsed.get(roadmapKey).body, roadmapKey);
     }
+    el.innerHTML = html;
+    bindStatusToggles(el);
+  }
+
+  // ── Issue Tab ──
+  function renderIssue() {
+    const el = $('#tab-issue');
+    const issueKey = findFile('_issue.md');
+    if (!issueKey) {
+      el.innerHTML = '<p style="color:#737373;">未找到问题文档（_issue.md）</p>';
+      return;
+    }
+    let html = renderFileStatusBar(issueKey);
+    html += renderMd(state.parsed.get(issueKey).body, issueKey);
+    el.innerHTML = html;
+    bindStatusToggles(el);
+  }
+
+  // ── Findings Tab ──
+  function renderFindings() {
+    const el = $('#tab-findings');
+    const findingsKey = findFile('_findings.md');
+    if (!findingsKey) {
+      el.innerHTML = '<p style="color:#737373;">未找到探索文档（_findings.md）</p>';
+      return;
+    }
+    let html = renderFileStatusBar(findingsKey);
+    html += renderMd(state.parsed.get(findingsKey).body, findingsKey);
     el.innerHTML = html;
     bindStatusToggles(el);
   }
@@ -1948,10 +2111,14 @@
 
   function fileToTab(file) {
     if (file.endsWith('_define.md') || file.endsWith('_roadmap.md')) return 'requirements';
+    if (file.endsWith('_issue.md')) return 'issue';
+    if (file.endsWith('_findings.md')) return 'findings';
     if (file.includes('modules/')) return 'design';
     if (file === '_check.md' || file.endsWith('/_check.md')) return 'check';
     if (file === '_plan.md' || file.endsWith('/_plan.md')) return 'execution';
     if (file === '_review.md' || file.endsWith('/_review.md')) return 'review';
+    if (PIPELINE_TYPE === 'fix') return 'issue';
+    if (PIPELINE_TYPE === 'exp') return 'findings';
     return 'requirements';
   }
 
@@ -2099,6 +2266,20 @@
   // ── Init ──
   function init() {
     initMarkdown();
+
+    // Dynamic tab bar based on pipeline type
+    const tabBar = document.querySelector('.tab-bar');
+    if (tabBar) {
+      const tabs = getPipelineTabs();
+      tabBar.innerHTML = tabs.map((t, i) =>
+        `<button class="tab-btn${i === 0 ? ' active' : ''}" data-tab="${t}">${TAB_LABELS[t] || t}</button>`
+      ).join('');
+    }
+
+    // Dynamic header label
+    const headerLabel = document.getElementById('header-label');
+    if (headerLabel) headerLabel.textContent = PIPELINE_LABELS[PIPELINE_TYPE] || 'feature:';
+
     loadNotes();
 
     // Tab clicks

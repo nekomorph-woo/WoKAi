@@ -21,6 +21,16 @@ pipeline:
 
 ### 路径约定
 
+#### system-name 约定
+
+wok-define 作为入口时，生成 `feat-s-` 前缀的 system-name（小功能管道）：
+
+- 格式：`feat-s-<关键词>`（如 `feat-s-user-avatar`、`feat-s-dark-mode`）
+- 目录：`plans/feat-s-<关键词>/`
+- 判断条件：功能规模 ≤ 3 个模块，无架构变更，不需要多阶段规划
+
+当上游已有 `_roadmap.md` 时（大功能管道 `feat-`），路径由 roadmap 阶段决定，不使用 `feat-s-` 前缀。
+
 | 场景 | 产出物路径 |
 |------|-----------|
 | 有 roadmap（`_roadmap.md` 存在） | `plans/<system-name>/p<n>-<phase-name>/_define.md` |

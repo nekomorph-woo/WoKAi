@@ -298,6 +298,11 @@ class SecureHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps(result, ensure_ascii=False).encode())
 
     IMPACT_PROPAGATION = {
+        '_issue.md': {
+            'patch': [],
+            'minor': ['_review.md'],
+            'major': ['_review.md'],
+        },
         '_define.md': {
             'patch': [],
             'minor': ['modules/_registry.md', 'modules/*/design.md', '_check.md', '_plan.md', '_review.md'],

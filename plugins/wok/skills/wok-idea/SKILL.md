@@ -15,6 +15,13 @@ pipeline:
 
 ## 快速开始
 
+### system-name 约定
+
+wok-idea 是 `feat-`（大功能）管道的入口。生成的 system-name 使用 `feat-` 前缀：
+
+- 格式：`feat-<项目名>`（如 `feat-smart-home`、`feat-e-commerce`）
+- 目录：`plans/feat-<项目名>/`
+
 1. 接收需求输入（零散想法 / 大段描述 / 完整 PRD）
 2. 双轨并行探索（发散 + 侦察）
 3. 与用户讨论发现
