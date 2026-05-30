@@ -111,6 +111,16 @@ simplify_count: <positive-int>
 
 </details>
 
+<details>
+<summary>【审查证据】[RESOLVED] src/api/auth.go:42 — 密钥硬编码</summary>
+
+- [🔴→✅] src/api/auth.go:42 — 密钥硬编码
+  原因: 使用字符串字面量作为签名密钥，已提交至 Git 历史
+  修复: 迁移至环境变量 AUTH_SECRET，新增启动时校验
+  简化: 未触发
+
+</details>
+
 ---
 
 ## Round <N-1> — ✅ Converged

@@ -135,6 +135,9 @@ class SecureHandler(http.server.SimpleHTTPRequestHandler):
             if api_path == '/status':
                 self._update_status(feature_root)
                 return
+            if api_path == '/checkbox':
+                self._toggle_checkbox(feature_root)
+                return
             if api_path.startswith('/notes/') and '/refs/' not in api_path:
                 self._update_note(feature_root, api_path)
                 return
@@ -220,6 +223,51 @@ class SecureHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-cache')
         self.end_headers()
         self.wfile.write(json.dumps(result, ensure_ascii=False).encode())
+
+    def _toggle_checkbox(self, feature_root):
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length)
+        try:
+            data = json.loads(body)
+        except (json.JSONDecodeError, ValueError):
+            self.send_error(400, 'Invalid JSON')
+            return
+        rel_file = data.get('file', '')
+        line_num = data.get('line', 0)
+        checked = data.get('checked', False)
+        if not rel_file or not line_num:
+            self.send_error(400, 'Missing file or line')
+            return
+        base = feature_root.resolve()
+        target = base / rel_file
+        try:
+            target = target.resolve()
+            if not str(target).startswith(str(base)):
+                self.send_error(403, 'Access denied')
+                return
+        except (OSError, ValueError):
+            self.send_error(403, 'Invalid path')
+            return
+        if not target.is_file():
+            self.send_error(404, 'File not found')
+            return
+        content = target.read_text(encoding='utf-8')
+        lines = content.split('\n')
+        idx = line_num - 1
+        if idx < 0 or idx >= len(lines):
+            self.send_error(400, 'Line out of range')
+            return
+        line = lines[idx]
+        if checked:
+            lines[idx] = re.sub(r'^-\s+\[\s?\]', '- [x]', line, count=1)
+        else:
+            lines[idx] = re.sub(r'^-\s+\[x\]', '- [ ]', line, count=1)
+        target.write_text('\n'.join(lines), encoding='utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Cache-Control', 'no-cache')
+        self.end_headers()
+        self.wfile.write(json.dumps({'ok': True, 'file': rel_file, 'line': line_num, 'checked': checked}).encode())
 
     # ── Freshness detection ──
 

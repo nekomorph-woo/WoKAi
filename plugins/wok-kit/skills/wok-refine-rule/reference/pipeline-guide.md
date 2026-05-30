@@ -9,7 +9,7 @@
 | `feat-` | 大功能 | `/wok-idea` | findings? → idea? → define → design → design-review → plan → implement → code-review | 概览, 需求, 设计, 校验, 执行, 审查 |
 | `feat-s-` | 小功能 | `/wok-define` | define → design?(auto) → implement → code-review | 概览, 需求, 审查 |
 | `fix-` | 问题修复 | `/wok-issue` | issue → implement → code-review | 概览, 问题, 审查 |
-| `exp-` | 探索优化 | `/wok-findings` | findings → implement → code-review | 概览, 探索, 审查 |
+| `exp-` | 探索优化 | `/wok-findings` | findings → plan → implement → code-review | 概览, 探索, 执行, 审查 |
 | `cr-` | 独立审查 | `/wok-code-review` | code-review → cr-insight | 概览, 审查 |
 
 ## 场景 → 管道映射

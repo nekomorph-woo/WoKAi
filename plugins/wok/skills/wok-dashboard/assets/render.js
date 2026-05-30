@@ -36,6 +36,7 @@
     ],
     exp: [
       { name: 'findings', label: '探索', test: (n) => /^_findings/.test(n) },
+      { name: 'plan', label: '执行', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
       { name: 'review', label: '审查', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
     ],
     cr: [
@@ -47,7 +48,7 @@
     feat: ['overview', 'requirements', 'design', 'check', 'execution', 'review'],
     'feat-s': ['overview', 'requirements', 'review'],
     fix: ['overview', 'issue', 'review'],
-    exp: ['overview', 'findings', 'review'],
+    exp: ['overview', 'findings', 'execution', 'review'],
     cr: ['overview', 'review'],
   };
 
@@ -69,6 +70,7 @@
     ],
     exp: [
       { title: '探索文档', test: (n) => /^_findings/.test(n) },
+      { title: '执行文档', test: (n) => n === '_plan.md' || n.endsWith('/_plan.md') },
       { title: '审查文档', test: (n) => n === '_review.md' || n.endsWith('/_review.md') },
     ],
     cr: [
@@ -257,14 +259,34 @@
     const markers = [];
     const lines = body.split('\n');
     for (let i = 0; i < lines.length; i++) {
+      // Heading format: ###/## [DECISION] title or ###/## [OPEN] title
       const hMatch = lines[i].match(/^###?\s+\[(DECISION|OPEN)\]\s+(.+)$/);
       if (hMatch) {
         markers.push({ type: hMatch[1], title: hMatch[2], line: i + 1 });
         continue;
       }
+      // List item format: - [ACTION] text
       const aMatch = lines[i].match(/^-\s+\[ACTION\]\s+(.+)$/);
       if (aMatch) {
         markers.push({ type: 'ACTION', title: aMatch[1], line: i + 1 });
+        continue;
+      }
+      // Table row format: | **[DECISION]** | some text | or | **[OPEN]** | some text |
+      const tMatch = lines[i].match(/^\|\s*\*\*\[(DECISION|OPEN)\]\*\*\s*\|\s*(.+?)\s*\|/);
+      if (tMatch) {
+        markers.push({ type: tMatch[1], title: tMatch[2], line: i + 1 });
+        continue;
+      }
+      // Bold inline format: **[DECISION]** some text or **[OPEN]** some text
+      const bMatch = lines[i].match(/^\*\*\[(DECISION|OPEN)\]\*\*\s+(.+)$/);
+      if (bMatch) {
+        markers.push({ type: bMatch[1], title: bMatch[2], line: i + 1 });
+        continue;
+      }
+      // Review finding format: - [🔴] file:line — title (from _review.md)
+      const rMatch = lines[i].match(/^-\s+\[(🔴|🟠|🟡)\]\s+(\S+)\s+[—–]\s+(.+)$/);
+      if (rMatch) {
+        markers.push({ type: 'OPEN', title: `${rMatch[1]} ${rMatch[2]} ${rMatch[3]}`, line: i + 1 });
       }
     }
     return markers;
@@ -527,6 +549,7 @@
   }
 
   function computeNextAction_feat() {
+    const actions = [];
     const defineKey = findFile('_define.md');
     const registryKey = findFile('modules/_registry.md');
     const checkKey = findFile('_check.md');
@@ -558,82 +581,150 @@
         }
       }
       const rec = skillMap[Math.min(earliestIdx, skillMap.length - 1)];
-      return { action: rec.action, detail: `${rec.detail} · ${staleDocs.length} 个文档过期` };
+      return [{ action: rec.action, detail: `${rec.detail} · ${staleDocs.length} 个文档过期`, priority: 'high' }];
     }
 
     const fs = computeFeatureStatus();
     if (fs.blockingCount > 0) {
-      return { action: `处理 ${fs.blockingCount} 个阻塞项`, detail: '运行 wok-design-review' };
+      return [{ action: `处理 ${fs.blockingCount} 个阻塞项`, detail: '运行 wok-design-review', priority: 'high' }];
     }
 
     if (defineKey) {
       const p = state.parsed.get(defineKey);
-      if (p?.frontmatter?.status !== 'approved') return { action: '确认需求文档', detail: '审批 _define.md' };
+      if (p?.frontmatter?.status !== 'approved') return [{ action: '确认需求文档', detail: '审批 _define.md' }];
     }
-    if (!registryKey) return { action: '生成模块设计', detail: '运行 wok-design' };
+    if (!registryKey) return [{ action: '生成模块设计', detail: '运行 wok-design' }];
 
     let hasDraftDesign = false;
     for (const [name, parsed] of state.parsed) {
       if (name.includes('modules/') && parsed.frontmatter?.status !== 'approved') hasDraftDesign = true;
     }
-    if (hasDraftDesign) return { action: '审阅并审批设计文档', detail: '切换到设计 tab' };
+    if (hasDraftDesign) return [{ action: '审阅并审批设计文档', detail: '切换到设计 tab' }];
 
-    if (!checkKey) return { action: '校验设计', detail: '运行 wok-design-review' };
-    if (!planKey) return { action: '生成执行计划', detail: '运行 wok-plan' };
+    if (!checkKey) return [{ action: '校验设计', detail: '运行 wok-design-review' }];
+    if (!planKey) return [{ action: '生成执行计划', detail: '运行 wok-plan' }];
 
     const planP = state.parsed.get(planKey);
-    if (planP?.frontmatter?.status !== 'approved') return { action: '审阅并审批执行计划', detail: '切换到执行 tab' };
-    if (planP?.frontmatter?.status === 'approved') return { action: '开始实现', detail: '运行 wok-implement' };
+    if (planP?.frontmatter?.status !== 'approved') return [{ action: '审阅并审批执行计划', detail: '切换到执行 tab' }];
+    if (planP?.frontmatter?.status === 'approved') {
+      actions.push({ action: '开始实现', detail: '运行 wok-implement', priority: 'high' });
+    }
 
-    if (isReviewConverged()) return { action: 'Feature 开发完成', detail: 'Review 已收敛' };
-    return { action: '检查管道状态', detail: '' };
+    if (isReviewConverged()) {
+      actions.push({ action: 'Feature 开发完成', detail: 'Review 已收敛', priority: 'low' });
+    }
+
+    // Acceptance criteria checks
+    const acKey = findFile('_issue.md') || findFile('_define.md');
+    if (acKey) {
+      const ac = parseAcceptanceCriteria(state.parsed.get(acKey).raw);
+      if (ac && ac.pendingAuto.length) {
+        actions.push({ action: `${ac.pendingAuto.length} 条自动验收标准未通过`, detail: '需 wok-implement 修复', priority: 'normal' });
+      }
+      if (ac && ac.pendingHuman.length) {
+        actions.push({ action: `${ac.pendingHuman.length} 条验收标准需人工确认`, detail: '在 Dashboard 中确认', priority: 'low' });
+      }
+    }
+
+    if (!actions.length) actions.push({ action: '检查管道状态', detail: '' });
+    return actions;
   }
 
   function computeNextAction_featS() {
+    const actions = [];
     const staleDocs = Object.entries(freshnessMap).filter(([, info]) => info.freshness === 'stale');
-    if (staleDocs.length) return { action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL' };
+    if (staleDocs.length) return [{ action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL', priority: 'high' }];
 
     const defineKey = findFile('_define.md');
-    if (!defineKey) return { action: '定义需求', detail: '运行 wok-define' };
+    if (!defineKey) return [{ action: '定义需求', detail: '运行 wok-define' }];
     const dp = state.parsed.get(defineKey);
-    if (dp?.frontmatter?.status !== 'approved') return { action: '确认需求文档', detail: '审批 _define.md' };
-    if (isReviewConverged()) return { action: '小功能完成', detail: 'Review 已收敛' };
-    return { action: '开始实现', detail: '运行 wok-implement' };
+    if (dp?.frontmatter?.status !== 'approved') return [{ action: '确认需求文档', detail: '审批 _define.md' }];
+    if (isReviewConverged()) {
+      actions.push({ action: '小功能完成', detail: 'Review 已收敛', priority: 'low' });
+    }
+
+    // Acceptance criteria checks
+    const acKey = findFile('_define.md');
+    if (acKey) {
+      const ac = parseAcceptanceCriteria(state.parsed.get(acKey).raw);
+      if (ac && ac.pendingAuto.length) {
+        actions.push({ action: `${ac.pendingAuto.length} 条自动验收标准未通过`, detail: '需 wok-implement 修复', priority: 'normal' });
+      }
+      if (ac && ac.pendingHuman.length) {
+        actions.push({ action: `${ac.pendingHuman.length} 条验收标准需人工确认`, detail: '在 Dashboard 中确认', priority: 'low' });
+      }
+    }
+
+    if (!actions.length) actions.push({ action: '开始实现', detail: '运行 wok-implement', priority: 'high' });
+    return actions;
   }
 
   function computeNextAction_fix() {
+    const actions = [];
     const staleDocs = Object.entries(freshnessMap).filter(([, info]) => info.freshness === 'stale');
-    if (staleDocs.length) return { action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL' };
+    if (staleDocs.length) return [{ action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL', priority: 'high' }];
 
     const issueKey = findFile('_issue.md');
-    if (!issueKey) return { action: '调查问题', detail: '运行 wok-issue' };
+    if (!issueKey) return [{ action: '调查问题', detail: '运行 wok-issue' }];
     const ip = state.parsed.get(issueKey);
-    if (ip?.frontmatter?.status !== 'approved') return { action: '确认问题分析', detail: '审批 _issue.md' };
-    if (isReviewConverged()) return { action: '修复完成', detail: 'Review 已收敛' };
-    return { action: '开始修复', detail: '运行 wok-implement' };
+    if (ip?.frontmatter?.status !== 'approved') return [{ action: '确认问题分析', detail: '审批 _issue.md' }];
+    if (isReviewConverged()) {
+      actions.push({ action: '修复完成', detail: 'Review 已收敛', priority: 'low' });
+    }
+
+    // Acceptance criteria checks
+    const acKey = findFile('_issue.md');
+    if (acKey) {
+      const ac = parseAcceptanceCriteria(state.parsed.get(acKey).raw);
+      if (ac && ac.pendingAuto.length) {
+        actions.push({ action: `${ac.pendingAuto.length} 条自动验收标准未通过`, detail: '需 wok-implement 修复', priority: 'normal' });
+      }
+      if (ac && ac.pendingHuman.length) {
+        actions.push({ action: `${ac.pendingHuman.length} 条验收标准需人工确认`, detail: '在 Dashboard 中确认', priority: 'low' });
+      }
+    }
+
+    if (!actions.length) actions.push({ action: '开始修复', detail: '运行 wok-implement', priority: 'high' });
+    return actions;
   }
 
   function computeNextAction_exp() {
+    const actions = [];
     const staleDocs = Object.entries(freshnessMap).filter(([, info]) => info.freshness === 'stale');
-    if (staleDocs.length) return { action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL' };
+    if (staleDocs.length) return [{ action: `${staleDocs.length} 个文档过期`, detail: '重新运行相关 SKILL', priority: 'high' }];
 
     const findingsKey = findFile('_findings.md');
-    if (!findingsKey) return { action: '探索代码', detail: '运行 wok-findings' };
-    if (isReviewConverged()) return { action: '优化完成', detail: 'Review 已收敛' };
-    return { action: '开始实现', detail: '运行 wok-implement' };
+    if (!findingsKey) return [{ action: '探索代码', detail: '运行 wok-findings' }];
+
+    const planKey = findFile('_plan.md');
+    if (!planKey) return [{ action: '制定计划', detail: '运行 wok-plan' }];
+
+    if (isReviewConverged()) {
+      actions.push({ action: '优化完成', detail: 'Review 已收敛', priority: 'low' });
+    }
+
+    if (!actions.length) actions.push({ action: '开始实现', detail: '运行 wok-implement', priority: 'high' });
+    return actions;
   }
 
   function computeNextAction_cr() {
+    const actions = [];
     const reviewKey = findFile('_review.md');
-    if (!reviewKey) return { action: '启动审查', detail: '运行 wok-code-review' };
+    if (!reviewKey) return [{ action: '启动审查', detail: '运行 wok-code-review' }];
 
     const review = state.parsed.get(reviewKey);
     const rounds = parseReviewReport(review.body);
     const latest = rounds.reduce((a, b) => b.num > a.num ? b : a, rounds[0] || {});
 
-    if (latest.status === 'analyzed') return { action: '审查完成', detail: '所有问题已分析' };
-    if (latest.status === 'converged') return { action: '审查完成', detail: 'Review 已收敛' };
-    return { action: '深入分析', detail: '运行 wok-cr-insight --types all' };
+    if (latest.status === 'analyzed') {
+      actions.push({ action: '审查完成', detail: '所有问题已分析', priority: 'low' });
+    } else if (latest.status === 'converged') {
+      actions.push({ action: '审查完成', detail: 'Review 已收敛', priority: 'low' });
+    } else {
+      actions.push({ action: '深入分析', detail: '运行 wok-cr-insight --types all', priority: 'high' });
+    }
+
+    return actions;
   }
 
   function renderGlobalStatusCard() {
@@ -675,8 +766,14 @@
     html += '</div>';
 
     html += '<div class="gs-right">';
-    html += `<span class="gs-next-action">▶ ${esc(nextAction.action)}</span>`;
-    if (nextAction.detail) html += `<span class="gs-next-detail">${esc(nextAction.detail)}</span>`;
+    const topActions = nextAction.slice(0, 3);
+    for (const a of topActions) {
+      const icon = a.priority === 'high' ? '🔴' : a.priority === 'low' ? '○' : '▶';
+      html += `<div class="gs-action-item">`;
+      html += `<span class="gs-next-action">${icon} ${esc(a.action)}</span>`;
+      if (a.detail) html += `<span class="gs-next-detail">${esc(a.detail)}</span>`;
+      html += '</div>';
+    }
     html += '</div>';
 
     card.innerHTML = html;
@@ -695,21 +792,42 @@
     setTimeout(() => row.classList.remove('ledger-row-blink'), 5500);
   }
 
+  let backToLedgerTimer = null;
+
+  function collapseBackToLedgerPanel() {
+    const panel = backToLedgerPanel;
+    if (!panel) return;
+    if (backToLedgerTimer) { clearTimeout(backToLedgerTimer); backToLedgerTimer = null; }
+    panel.classList.add('back-to-ledger-collapsed');
+    panel.classList.remove('back-to-ledger-expanded');
+  }
+
   function showBackToLedgerBtn(title, source, lineNo) {
     hideBackToLedgerBtn();
     const panel = document.createElement('div');
-    panel.className = 'back-to-ledger-panel';
+    panel.className = 'back-to-ledger-panel back-to-ledger-expanded';
 
+    const body = document.createElement('div');
+    body.className = 'back-to-ledger-body';
     const hint = document.createElement('div');
     hint.className = 'back-to-ledger-hint';
     hint.innerHTML = `<span class="back-to-ledger-source">${esc(source)}</span> <span class="back-to-ledger-line">L${lineNo}</span>`;
     const content = document.createElement('div');
     content.className = 'back-to-ledger-content';
     content.textContent = title;
+    body.appendChild(hint);
+    body.appendChild(content);
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'back-to-ledger-dismiss';
+    dismissBtn.textContent = '✕';
+    dismissBtn.title = '收起';
+    dismissBtn.addEventListener('click', (e) => { e.stopPropagation(); collapseBackToLedgerPanel(); });
+
     const btn = document.createElement('button');
     btn.className = 'back-to-ledger-btn';
     btn.textContent = '← 返回概览';
-    btn.addEventListener('click', () => {
+    const doReturn = () => {
       const from = state.ledgerJumpFrom;
       hideBackToLedgerBtn();
       switchTab(from?.tab || 'overview');
@@ -726,16 +844,21 @@
           setTimeout(() => blinkLedgerRow(from.rowFile, from.rowLine), 500);
         }
       });
-    });
+    };
+    btn.addEventListener('click', doReturn);
+    panel.addEventListener('click', doReturn);
 
-    panel.appendChild(hint);
-    panel.appendChild(content);
+    panel.appendChild(body);
+    panel.appendChild(dismissBtn);
     panel.appendChild(btn);
     document.body.appendChild(panel);
     backToLedgerPanel = panel;
+
+    backToLedgerTimer = setTimeout(() => collapseBackToLedgerPanel(), 8000);
   }
 
   function hideBackToLedgerBtn() {
+    if (backToLedgerTimer) { clearTimeout(backToLedgerTimer); backToLedgerTimer = null; }
     if (backToLedgerPanel) { backToLedgerPanel.remove(); backToLedgerPanel = null; }
   }
 
@@ -809,7 +932,7 @@
         html += `<span class="stale-banner-item">${esc(doc.path)}: 上游 ${doc.reasons.join(', ')} 已变更</span>`;
       }
       html += '</div>';
-      html += '<div class="stale-banner-action">建议：' + esc(computeNextAction().detail) + '</div>';
+      html += '<div class="stale-banner-action">建议：' + esc(computeNextAction()[0]?.detail || '') + '</div>';
       html += '</div>';
     }
 
@@ -819,7 +942,7 @@
       const findings = state.parsed.get(findingsKey);
       html += '<div class="overview-section"><h2>代码探索基线</h2>';
       html += '<details class="findings-details"><summary class="findings-summary">wok-findings 探索结果</summary>';
-      html += '<div class="findings-body">' + renderMd(findings.body, findingsKey) + '</div>';
+      html += '<div class="findings-body">' + buildFindingsSummaryCard(findings.raw) + '</div>';
       html += '</details></div>';
     }
 
@@ -829,7 +952,33 @@
       const issue = state.parsed.get(issueKey);
       html += '<div class="overview-section"><h2>问题分析基线</h2>';
       html += '<details class="findings-details"><summary class="findings-summary">wok-issue 调查结果</summary>';
-      html += '<div class="findings-body">' + renderMd(issue.body, issueKey) + '</div>';
+      html += '<div class="findings-body">' + buildIssueSummaryCard(issue.raw) + '</div>';
+      html += '</details></div>';
+    }
+
+    // Acceptance criteria summary (per document)
+    const acSources = [];
+    if (issueKey) acSources.push({ key: issueKey, label: '问题验收标准' });
+    const defineKeyForAc = findFile('_define.md');
+    if (defineKeyForAc) acSources.push({ key: defineKeyForAc, label: '需求验收标准' });
+
+    for (const src of acSources) {
+      const parsed = state.parsed.get(src.key);
+      if (!parsed) continue;
+      const ac = parseAcceptanceCriteria(parsed.raw);
+      if (!ac || ac.doneCount >= ac.total) continue;
+
+      const autoPending = ac.autoTotal - ac.autoDone;
+      const humanPending = ac.humanTotal - ac.humanDone;
+      const parts = [];
+      if (ac.autoTotal) parts.push(`${ac.autoDone}/${ac.autoTotal} 🤖`);
+      if (ac.humanTotal) parts.push(`${ac.humanDone}/${ac.humanTotal} 👤`);
+
+      html += '<div class="overview-section"><h2>' + esc(src.label) + '</h2>';
+      html += '<details class="findings-details"><summary class="findings-summary">';
+      html += esc(parts.join('，')) + ' — ' + esc(src.key.split('/').pop());
+      html += '</summary>';
+      html += '<div class="findings-body">' + buildAcceptanceSummaryCard(parsed.raw) + '</div>';
       html += '</details></div>';
     }
 
@@ -879,7 +1028,13 @@
         for (const item of group.items) {
           html += `<li class="brief-item" data-file="${item.name}"><div class="brief-item-header"><span class="file-name">${esc(item.name)}</span>`;
           html += item.status ? renderStatusToggle(item.name, item.status, item.freshness) : '';
-          const briefHtml = item.brief || (item.name === '_review.md' || item.name.endsWith('/_review.md') ? buildReviewBrief(item.name) : null);
+          let briefHtml = item.brief;
+          // For review files, append stats line below the metadata brief
+          if (item.name === '_review.md' || item.name.endsWith('/_review.md')) {
+            const statsHtml = buildReviewBrief(item.name);
+            if (briefHtml && statsHtml) briefHtml = briefHtml + '<br>' + statsHtml;
+            else briefHtml = briefHtml || statsHtml;
+          }
           html += `</div>${briefHtml ? md.render(briefHtml) : '<span style="color:#737373">—</span>'}</li>`;
         }
         html += '</ul>';
@@ -900,41 +1055,56 @@
       { key: 'action', label: 'ACT 修复动作', test: (m) => m.type === 'ACTION' },
     ];
 
-    html += '<div class="overview-section"><h2>标记账本</h2>';
-    html += '<div class="ledger-tabs">';
-    for (const tab of markerTabs) {
-      const count = allMarkers.filter(tab.test).length;
-      html += `<button class="ledger-tab-btn${tab.key === 'decision' ? ' active' : ''}" data-tab="${tab.key}">${tab.label} <span class="ledger-tab-count">${count}</span></button>`;
-    }
-    html += '</div>';
-    html += '<div class="ledger-search-wrap"><input type="text" class="ledger-search" placeholder="搜索标记..." id="ledger-search"></div>';
-    html += '<div class="ledger-panels">';
-
-    for (const tab of markerTabs) {
-      const items = allMarkers.filter(tab.test);
-      html += `<div class="ledger-panel${tab.key === 'decision' ? ' active' : ''}" data-panel="${tab.key}">`;
-      if (items.length) {
-        html += '<table class="ledger-table"><thead><tr>';
-        html += '<th>#</th><th>内容</th><th>来源</th><th>行</th>';
-        html += '</tr></thead><tbody>';
-        for (let di = 0; di < items.length; di++) {
-          const d = items[di];
-          const sourceParts = d.file.split('/');
-          const sourceLabel = sourceParts.length > 1 ? sourceParts.slice(-2).join('/') : d.file;
-          html += `<tr class="ledger-row" data-source-file="${esc(d.file)}" data-source-line="${d.line}">`;
-          html += `<td class="ledger-idx">${di + 1}</td>`;
-          html += `<td class="ledger-content">${esc(d.title)}</td>`;
-          html += `<td class="ledger-source">${esc(sourceLabel)}</td>`;
-          html += `<td class="ledger-line">L${d.line}</td>`;
-          html += '</tr>';
-        }
-        html += '</tbody></table>';
-      } else {
-        html += '<div class="ledger-empty">无</div>';
+    if (allMarkers.length === 0) {
+      html += '<div class="overview-section"><h2>标记账本</h2>';
+      html += '<p style="color:#737373;font-size:13px;">标记账本为空 — 决策、待处理问题和修复动作将在此汇总</p>';
+      html += '</div>';
+    } else {
+      html += '<div class="overview-section"><h2>标记账本</h2>';
+      // Summary tags
+      const decCount = allMarkers.filter(m => m.type === 'DECISION').length;
+      const openCount = allMarkers.filter(m => m.type === 'OPEN').length;
+      const actCount = allMarkers.filter(m => m.type === 'ACTION').length;
+      html += '<div class="ledger-tags">';
+      if (decCount) html += `<span class="ledger-tag decision">决策 ${decCount}</span>`;
+      if (openCount) html += `<span class="ledger-tag open">待处理 ${openCount}</span>`;
+      if (actCount) html += `<span class="ledger-tag action">修复动作 ${actCount}</span>`;
+      html += '</div>';
+      html += '<div class="ledger-tabs">';
+      for (const tab of markerTabs) {
+        const count = allMarkers.filter(tab.test).length;
+        html += `<button class="ledger-tab-btn${tab.key === 'decision' ? ' active' : ''}" data-tab="${tab.key}">${tab.label} <span class="ledger-tab-count">${count}</span></button>`;
       }
       html += '</div>';
+      html += '<div class="ledger-search-wrap"><input type="text" class="ledger-search" placeholder="搜索标记..." id="ledger-search"></div>';
+      html += '<div class="ledger-panels">';
+
+      for (const tab of markerTabs) {
+        const items = allMarkers.filter(tab.test);
+        html += `<div class="ledger-panel${tab.key === 'decision' ? ' active' : ''}" data-panel="${tab.key}">`;
+        if (items.length) {
+          html += '<table class="ledger-table"><thead><tr>';
+          html += '<th>#</th><th>内容</th><th>来源</th><th>行</th>';
+          html += '</tr></thead><tbody>';
+          for (let di = 0; di < items.length; di++) {
+            const d = items[di];
+            const sourceParts = d.file.split('/');
+            const sourceLabel = sourceParts.length > 1 ? sourceParts.slice(-2).join('/') : d.file;
+            html += `<tr class="ledger-row" data-source-file="${esc(d.file)}" data-source-line="${d.line}">`;
+            html += `<td class="ledger-idx">${di + 1}</td>`;
+            html += `<td class="ledger-content">${esc(d.title)}</td>`;
+            html += `<td class="ledger-source">${esc(sourceLabel)}</td>`;
+            html += `<td class="ledger-line">L${d.line}</td>`;
+            html += '</tr>';
+          }
+          html += '</tbody></table>';
+        } else {
+          html += '<div class="ledger-empty">无</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div></div>';
     }
-    html += '</div></div>';
 
     el.innerHTML = html;
 
@@ -1006,10 +1176,32 @@
         }
         switchTab(targetTab);
         setTimeout(() => {
-          const target = document.querySelector(`[data-source-file="${file}"][data-source-line="${line}"]`);
+          // Try exact source-file + source-line match first
+          let target = document.querySelector(`[data-source-file="${file}"][data-source-line="${line}"]`);
+          if (!target) {
+            // Fallback: search nearby lines (±2) for source-file match
+            for (let offset = 1; offset <= 3; offset++) {
+              target = document.querySelector(`[data-source-file="${file}"][data-source-line="${line - offset}"]`)
+                    || document.querySelector(`[data-source-file="${file}"][data-source-line="${line + offset}"]`);
+              if (target) break;
+            }
+          }
+          if (!target) {
+            // Fallback: match by title text content in headings or list items
+            const mainEl = document.querySelector('main');
+            if (mainEl) {
+              const allElements = mainEl.querySelectorAll('h2, h3, h4, li, td');
+              for (const el of allElements) {
+                if (el.textContent.trim().includes(title.trim())) {
+                  target = el;
+                  break;
+                }
+              }
+            }
+          }
           if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
           showBackToLedgerBtn(state.ledgerJumpFrom.title, state.ledgerJumpFrom.source, line);
-        }, 200);
+        }, 300);
       });
     });
     // Ledger tab switching
@@ -1046,6 +1238,176 @@
     return blockquotes ? blockquotes.map(b => b.replace(/^>\s*/, '')).join(' ') : '';
   }
 
+  // Parse _findings.md into structured sections for overview summary card.
+  // Section names follow wok-findings SKILL.md output format:
+  //   探索范围, 架构概览, 设计约束, 现有模式, 代码→文档映射, 潜在问题, 对后续设计的影响
+  // Content parsing supports both rich (- **name**：desc) and simple (- text) bullet formats.
+  function parseFindingsSummary(raw) {
+    const body = raw.replace(/^---\n[\s\S]*?\n---\s*\n/, '');
+    const sections = {};
+    let currentSection = null;
+    let currentContent = [];
+
+    for (const line of body.split('\n')) {
+      const h2 = line.match(/^## (.+)$/);
+      if (h2) {
+        if (currentSection) sections[currentSection] = currentContent.join('\n');
+        currentSection = h2[1].trim();
+        currentContent = [];
+      } else if (currentSection) {
+        currentContent.push(line);
+      }
+    }
+    if (currentSection) sections[currentSection] = currentContent.join('\n');
+
+    const result = { issues: [], constraints: [], patterns: [], scope: '', impact: [], docWarnings: 0 };
+
+    // Scope: first non-empty text (skip code blocks)
+    if (sections['探索范围']) {
+      result.scope = sections['探索范围'].replace(/```[\s\S]*?```/g, '').trim();
+    }
+
+    // Architecture: count file references (any extension)
+    if (sections['架构概览']) {
+      const fileCount = (sections['架构概览'].match(/\.\w+\b/g) || [])
+        .filter(m => !['.md', '.json', '.yml', '.yaml', '.txt'].includes(m)).length;
+      result.fileCount = fileCount || null;
+    }
+
+    // Constraints: rich (- **name**：desc) or simple (- text)
+    if (sections['设计约束']) {
+      const lines = sections['设计约束'].split('\n').filter(l => l.trim().startsWith('-'));
+      result.constraints = lines.map(l => {
+        const m = l.match(/^-\s+\*\*(.+?)\*\*/);
+        if (m) return m[1];
+        const simple = l.replace(/^-\s+/, '').trim();
+        return simple ? simple.split(/[。：:，,]/)[0] : null;
+      }).filter(Boolean);
+    }
+
+    // Patterns: rich (- **name**：desc) or simple (- text)
+    if (sections['现有模式']) {
+      const lines = sections['现有模式'].split('\n').filter(l => l.trim().startsWith('-'));
+      result.patterns = lines.map(l => {
+        const m = l.match(/^-\s+\*\*(.+?)\*\*/);
+        if (m) return m[1];
+        const simple = l.replace(/^-\s+/, '').trim();
+        return simple ? simple.split(/[。：:，,]/)[0] : null;
+      }).filter(Boolean);
+    }
+
+    // Issues: rich (- 🔴 title — detail) or simple (- 🔴 title)
+    const issueSection = sections['潜在问题'] || '';
+    const issueLines = issueSection.split('\n').filter(l => l.trim().startsWith('-'));
+    result.issues = issueLines.map(l => {
+      const m = l.match(/^-\s+(🔴|🟠|🟡)\s+(.+)$/);
+      if (!m) return null;
+      const parts = m[2].split(/\s*[—–]\s*/);
+      return { severity: m[1], title: parts[0].trim() };
+    }).filter(Boolean);
+
+    // Doc warnings: count ⚠️ in mapping table
+    if (sections['代码→文档映射']) {
+      result.docWarnings = (sections['代码→文档映射'].match(/⚠️/g) || []).length;
+    }
+
+    // Impact: extract bold keywords or first segment
+    if (sections['对后续设计的影响']) {
+      const lines = sections['对后续设计的影响'].split('\n').filter(l => l.trim().startsWith('-'));
+      result.impact = lines.map(l => {
+        const text = l.replace(/^-\s+/, '').trim();
+        const m = text.match(/^\*\*(.+?)\*\*/);
+        return m ? m[1] : text.split(/[。：:，,]/)[0];
+      }).filter(Boolean);
+    }
+
+    return result;
+  }
+
+  function buildFindingsSummaryCard(raw) {
+    const s = parseFindingsSummary(raw);
+    let html = '<div class="findings-summary-card">';
+
+    // Metrics row
+    html += '<div class="findings-summary-metrics">';
+    if (s.fileCount) html += `<span class="fsm-item">📁 ${s.fileCount} 文件</span>`;
+    if (s.scope) {
+      const scopeText = s.scope.length > 80 ? s.scope.slice(0, 80) + '…' : s.scope;
+      html += `<span class="fsm-item">${esc(scopeText)}</span>`;
+    }
+    html += '</div>';
+
+    // Constraints + Patterns row
+    if (s.constraints.length || s.patterns.length) {
+      html += '<div class="findings-summary-row">';
+      if (s.constraints.length) {
+        html += '<div class="fsm-group">';
+        html += `<span class="fsm-label">设计约束</span>`;
+        html += '<div class="fsm-tags">';
+        for (const c of s.constraints) {
+          html += `<span class="fsm-tag constraint">${esc(c)}</span>`;
+        }
+        html += '</div></div>';
+      }
+      if (s.patterns.length) {
+        html += '<div class="fsm-group">';
+        html += `<span class="fsm-label">现有模式</span>`;
+        html += '<div class="fsm-tags">';
+        for (const p of s.patterns) {
+          html += `<span class="fsm-tag pattern">${esc(p)}</span>`;
+        }
+        html += '</div></div>';
+      }
+      html += '</div>';
+    }
+
+    // Issues
+    if (s.issues.length) {
+      const redCount = s.issues.filter(i => i.severity === '🔴').length;
+      const orangeCount = s.issues.filter(i => i.severity === '🟠').length;
+      const yellowCount = s.issues.filter(i => i.severity === '🟡').length;
+      html += '<div class="findings-summary-row">';
+      html += '<div class="fsm-group fsm-issues">';
+      html += `<span class="fsm-label">潜在问题</span>`;
+      const countParts = [];
+      if (redCount) countParts.push(`🔴 ${redCount}`);
+      if (orangeCount) countParts.push(`🟠 ${orangeCount}`);
+      if (yellowCount) countParts.push(`🟡 ${yellowCount}`);
+      html += `<span class="fsm-count">${countParts.join(' ')}</span>`;
+      html += '<div class="fsm-issue-list">';
+      for (const issue of s.issues) {
+        const cls = issue.severity === '🔴' ? 'red' : issue.severity === '🟠' ? 'orange' : 'yellow';
+        html += `<div class="fsm-issue"><span class="fsm-severity ${cls}">${issue.severity}</span> <span class="fsm-issue-title">${esc(issue.title)}</span></div>`;
+      }
+      html += '</div></div></div>';
+    }
+
+    // Impact
+    if (s.impact.length) {
+      html += '<div class="findings-summary-row">';
+      html += '<div class="fsm-group">';
+      html += `<span class="fsm-label">影响建议</span>`;
+      html += `<span class="fsm-count">${s.impact.length} 条</span>`;
+      html += '<div class="fsm-impact-list">';
+      for (const imp of s.impact) {
+        const m = imp.match(/^\*\*(.+?)\*\*[，,]/);
+        const name = m ? m[1] : imp.slice(0, 40);
+        html += `<span class="fsm-tag impact">${esc(name)}</span>`;
+      }
+      html += '</div></div></div>';
+    }
+
+    // Doc warnings
+    if (s.docWarnings) {
+      html += '<div class="findings-summary-row">';
+      html += `<span class="fsm-warning">⚠️ ${s.docWarnings} 个代码区域缺少设计文档</span>`;
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
   // ── Requirements Tab ──
   function renderRequirements() {
     const el = $('#tab-requirements');
@@ -1064,6 +1426,276 @@
     }
     el.innerHTML = html;
     bindStatusToggles(el);
+    bindAcceptanceCheckboxes(el);
+  }
+
+  // Parse _issue.md into structured sections for overview summary card.
+  // Section names follow wok-issue SKILL.md output format:
+  //   修复范围, 问题, 根因分析, TDD 修复计划, 验收标准
+  function parseIssueSummary(raw) {
+    const body = raw.replace(/^---\n[\s\S]*?\n---\s*\n/, '');
+    const sections = {};
+    let currentSection = null;
+    let currentContent = [];
+
+    for (const line of body.split('\n')) {
+      const h2 = line.match(/^## (.+)$/);
+      if (h2) {
+        if (currentSection) sections[currentSection] = currentContent.join('\n');
+        currentSection = h2[1].trim();
+        currentContent = [];
+      } else if (currentSection) {
+        currentContent.push(line);
+      }
+    }
+    if (currentSection) sections[currentSection] = currentContent.join('\n');
+
+    const result = { scope: '', problem: {}, rootCause: {}, tddSteps: 0, criteria: [], criteriaDone: 0 };
+
+    // 修复范围
+    if (sections['修复范围']) {
+      const text = sections['修复范围'].replace(/^>\s*/gm, '').trim();
+      result.scope = text;
+    }
+
+    // 问题: extract 实际行为, 预期行为, 复现步骤
+    if (sections['问题']) {
+      const actual = sections['问题'].match(/\*\*实际行为\*\*[：:]\s*(.+)/s);
+      const expected = sections['问题'].match(/\*\*预期行为\*\*[：:]\s*(.+)/s);
+      if (actual) result.problem.actual = actual[1].replace(/\n\s+/g, ' ').trim();
+      if (expected) result.problem.expected = expected[1].replace(/\n\s+/g, ' ').trim();
+    }
+
+    // 根因分析: extract 问题类型, 失败原因
+    if (sections['根因分析']) {
+      const typeMatch = sections['根因分析'].match(/\*\*问题类型\*\*[：:]\s*(.+)/);
+      if (typeMatch) result.rootCause.type = typeMatch[1].trim();
+      const reasonMatch = sections['根因分析'].match(/\*\*失败原因\*\*[：:]\s*(.+)/s);
+      if (reasonMatch) result.rootCause.reason = reasonMatch[1].replace(/\n\s+/g, ' ').trim();
+    }
+
+    // TDD 修复计划: count numbered steps (lines starting with digits)
+    if (sections['TDD 修复计划']) {
+      const steps = sections['TDD 修复计划'].match(/^\d+\.\s+\*\*RED\*\*/gm);
+      result.tddSteps = steps ? steps.length : 0;
+    }
+
+    // 验收标准: count checkboxes
+    if (sections['验收标准']) {
+      const checks = sections['验收标准'].match(/^-\s+\[[ x]\]/gm);
+      if (checks) {
+        result.criteria = checks.length;
+        result.criteriaDone = (sections['验收标准'].match(/^-\s+\[x\]/gm) || []).length;
+      }
+    }
+
+    return result;
+  }
+
+  function buildIssueSummaryCard(raw) {
+    const s = parseIssueSummary(raw);
+    let html = '<div class="findings-summary-card">';
+
+    // Scope badge
+    if (s.scope) {
+      const scopeCls = s.scope === '简单修复' ? 'constraint' : 'impact';
+      html += '<div class="findings-summary-metrics">';
+      html += `<span class="fsm-tag ${scopeCls}">${esc(s.scope)}</span>`;
+      if (s.rootCause.type) {
+        html += `<span class="fsm-tag pattern">${esc(s.rootCause.type)}</span>`;
+      }
+      html += '</div>';
+    }
+
+    // Problem description
+    if (s.problem.actual) {
+      const actualText = s.problem.actual.length > 120 ? s.problem.actual.slice(0, 120) + '…' : s.problem.actual;
+      html += '<div class="findings-summary-row">';
+      html += '<div class="fsm-group">';
+      html += '<span class="fsm-label">实际行为</span>';
+      html += `<span style="font-size:12px;color:#555;line-height:1.5">${esc(actualText)}</span>`;
+      html += '</div></div>';
+    }
+
+    // Root cause
+    if (s.rootCause.reason) {
+      const reasonText = s.rootCause.reason.length > 120 ? s.rootCause.reason.slice(0, 120) + '…' : s.rootCause.reason;
+      html += '<div class="findings-summary-row">';
+      html += '<div class="fsm-group">';
+      html += '<span class="fsm-label">根因</span>';
+      html += `<span style="font-size:12px;color:#555;line-height:1.5">${esc(reasonText)}</span>`;
+      html += '</div></div>';
+    }
+
+    // TDD steps + criteria
+    if (s.tddSteps || s.criteria) {
+      html += '<div class="findings-summary-row" style="gap:20px">';
+      if (s.tddSteps) {
+        html += '<div class="fsm-group">';
+        html += '<span class="fsm-label">TDD 修复计划</span>';
+        html += `<span class="fsm-count">${s.tddSteps} 个 RED/GREEN 循环</span>`;
+        html += '</div>';
+      }
+      if (s.criteria) {
+        html += '<div class="fsm-group">';
+        html += '<span class="fsm-label">验收标准</span>';
+        html += `<span class="fsm-count">${s.criteriaDone}/${s.criteria} 已完成</span>`;
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // Parse acceptance criteria from any document's 验收标准 section
+  function parseAcceptanceCriteria(raw) {
+    const body = raw.replace(/^---\n[\s\S]*?\n---\s*\n/, '');
+    const sections = {};
+    let currentSection = null;
+    let currentContent = [];
+
+    for (const line of body.split('\n')) {
+      const h2 = line.match(/^## (.+)$/);
+      if (h2) {
+        if (currentSection) sections[currentSection] = currentContent.join('\n');
+        currentSection = h2[1].trim();
+        currentContent = [];
+      } else if (currentSection) {
+        currentContent.push(line);
+      }
+    }
+    if (currentSection) sections[currentSection] = currentContent.join('\n');
+
+    const criteriaText = sections['验收标准'] || sections['验收标准总览'] || '';
+    if (!criteriaText) return null;
+
+    const items = [];
+    for (const line of criteriaText.split('\n')) {
+      const m = line.match(/^-\s+\[([ x])\]\s+(.+)$/);
+      if (!m) continue;
+      const done = m[1] === 'x';
+      const text = m[2].trim();
+      const isHuman = text.startsWith('👤');
+      const isAuto = text.startsWith('🤖');
+      items.push({ done, text, isHuman, isAuto });
+    }
+    if (!items.length) return null;
+
+    const total = items.length;
+    const doneCount = items.filter(i => i.done).length;
+    const autoItems = items.filter(i => i.isAuto);
+    const autoDone = autoItems.filter(i => i.done).length;
+    const humanItems = items.filter(i => i.isHuman);
+    const humanDone = humanItems.filter(i => i.done).length;
+    const pendingAuto = autoItems.filter(i => !i.done);
+    const pendingHuman = humanItems.filter(i => !i.done);
+
+    return { total, doneCount, autoTotal: autoItems.length, autoDone, humanTotal: humanItems.length, humanDone, pendingAuto, pendingHuman };
+  }
+
+  function buildAcceptanceSummaryCard(raw) {
+    const ac = parseAcceptanceCriteria(raw);
+    if (!ac || ac.doneCount >= ac.total) return '';
+
+    let html = '<div class="findings-summary-card ac-card">';
+    html += `<div class="findings-summary-metrics">`;
+    html += `<span class="fsm-label" style="font-size:13px">验收标准</span>`;
+    html += `<span class="fsm-item">${ac.doneCount}/${ac.total} 已通过</span>`;
+    html += '</div>';
+
+    // Auto/Human breakdown
+    html += '<div class="findings-summary-row" style="gap:20px">';
+    if (ac.autoTotal) {
+      html += '<div class="fsm-group">';
+      html += `<span class="fsm-label">🤖 自动验证</span>`;
+      const autoIcon = ac.autoDone === ac.autoTotal ? '✅' : `✅ ${ac.autoDone} ❌ ${ac.autoTotal - ac.autoDone}`;
+      html += `<span class="fsm-count">${autoIcon}</span>`;
+      html += '</div>';
+    }
+    if (ac.humanTotal) {
+      html += '<div class="fsm-group">';
+      html += `<span class="fsm-label">👤 人工确认</span>`;
+      const humanIcon = ac.humanDone === ac.humanTotal ? '✅' : `✅ ${ac.humanDone} ⏳ ${ac.humanTotal - ac.humanDone}`;
+      html += `<span class="fsm-count">${humanIcon}</span>`;
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Pending items
+    const pending = [...ac.pendingAuto, ...ac.pendingHuman];
+    if (pending.length) {
+      html += '<div class="fsm-issue-list">';
+      for (const p of pending.slice(0, 5)) {
+        const icon = p.isAuto ? '❌ 🤖' : '⏳ 👤';
+        const text = p.text.replace(/^[🤖👤]\s*/, '');
+        html += `<div class="fsm-issue"><span style="font-size:11px">${icon}</span> <span class="fsm-issue-title">${esc(text.length > 80 ? text.slice(0, 80) + '…' : text)}</span></div>`;
+      }
+      if (pending.length > 5) html += `<div class="fsm-issue" style="color:#888">...还有 ${pending.length - 5} 条</div>`;
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  function bindAcceptanceCheckboxes(container) {
+    // Find all rendered list items containing checkbox patterns with 🤖 or 👤
+    container.querySelectorAll('li').forEach(li => {
+      const text = li.textContent.trim();
+      // markdown-it renders `- [ ]` / `- [x]` as literal text inside the li
+      // Match patterns like "☐ 🤖 text" / "☒ 🤖 text" or "[ ] 🤖 text" / "[x] 🤖 text"
+      const checkMatch = text.match(/^(?:☐|☒|\[[ x]\])\s*([🤖👤])/);
+      if (!checkMatch) return;
+
+      // Find the source file and line
+      const sourceEl = li.closest('[data-source-file]');
+      if (!sourceEl) return;
+      const sourceFile = sourceEl.dataset.sourceFile;
+      const lineEl = li.closest('[data-source-line]') || sourceEl;
+      const sourceLine = parseInt(lineEl.dataset.sourceLine || sourceEl.dataset.sourceLine || '0');
+      if (!sourceFile || !sourceLine) return;
+
+      // Replace list item content with interactive checkbox
+      const isChecked = text.startsWith('☒') || text.startsWith('[x]');
+      const isHuman = checkMatch[1] === '👤';
+      const cleanText = text.replace(/^(?:☐|☒|\[[ x]\])\s*/, '');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = isChecked;
+      checkbox.className = 'ac-checkbox' + (isHuman ? ' human' : ' auto');
+      checkbox.dataset.file = sourceFile;
+      checkbox.dataset.line = sourceLine;
+
+      // Store original text in a span
+      const label = document.createElement('span');
+      label.className = 'ac-label' + (isChecked ? ' done' : '');
+      label.textContent = cleanText;
+
+      li.innerHTML = '';
+      li.className = 'ac-item';
+      li.appendChild(checkbox);
+      li.appendChild(label);
+
+      checkbox.addEventListener('change', async () => {
+        const wasChecked = checkbox.checked;
+        try {
+          const resp = await fetch(FEATURE_BASE + '/api/checkbox', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: sourceFile, line: sourceLine, checked: wasChecked })
+          });
+          if (!resp.ok) throw new Error('API error');
+          label.className = 'ac-label' + (wasChecked ? ' done' : '');
+          // Reload files to refresh state
+          await fetchAndLoadFiles();
+        } catch (e) {
+          checkbox.checked = !wasChecked; // revert
+        }
+      });
+    });
   }
 
   // ── Issue Tab ──
@@ -1078,6 +1710,7 @@
     html += renderMd(state.parsed.get(issueKey).body, issueKey);
     el.innerHTML = html;
     bindStatusToggles(el);
+    bindAcceptanceCheckboxes(el);
   }
 
   // ── Findings Tab ──
@@ -1088,10 +1721,54 @@
       el.innerHTML = '<p style="color:#737373;">未找到探索文档（_findings.md）</p>';
       return;
     }
+    const body = state.parsed.get(findingsKey).body;
+
+    // Extract h2 headings for navigation
+    const headings = [];
+    const headingMap = body.split('\n');
+    let headingIdx = 0;
+    for (const line of headingMap) {
+      const m = line.match(/^## (.+)$/);
+      if (m) {
+        headings.push({ id: `findings-h2-${headingIdx}`, title: m[1].trim() });
+        headingIdx++;
+      }
+    }
+
     let html = renderFileStatusBar(findingsKey);
-    html += renderMd(state.parsed.get(findingsKey).body, findingsKey);
+
+    // Two-column layout: nav + content
+    if (headings.length > 0) {
+      html += '<div class="findings-layout">';
+      // Left nav
+      html += '<nav class="findings-nav">';
+      html += '<div class="findings-nav-title">目录</div>';
+      for (const h of headings) {
+        html += `<a class="findings-nav-link" data-target="${h.id}">${esc(h.title)}</a>`;
+      }
+      html += '</nav>';
+      // Right content
+      html += '<div class="findings-content">';
+    }
+
+    // Render markdown with anchored h2s
+    html += renderMdWithAnchors(body, findingsKey, 'findings-h2-');
+
+    if (headings.length > 0) {
+      html += '</div></div>';
+    }
+
     el.innerHTML = html;
     bindStatusToggles(el);
+    bindAcceptanceCheckboxes(el);
+
+    // Nav click -> scroll to heading
+    el.querySelectorAll('.findings-nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        const target = el.querySelector(`#${CSS.escape(link.dataset.target)}`);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
   }
 
   // ── Design Tab ──
@@ -1385,18 +2062,62 @@
     const red = open.filter(f => f.severity === '🔴').length;
     const orange = open.filter(f => f.severity === '🟠').length;
     const yellow = open.filter(f => f.severity === '🟡').length;
-    const parts = [];
+    const total = open.length + resolved;
+
+    // Line 1: status + round + files
+    const line1 = [];
     if (latest.badgeClass) {
-      const label = latest.status === 'converged' ? '✅ 已收敛' : '⚠️ 达到上限';
-      parts.push(label);
+      let label;
+      if (latest.status === 'converged') label = '✅ 已收敛';
+      else if (latest.status === 'analyzed') label = '📊 已分析';
+      else label = '⚠️ 达到上限';
+      line1.push(label);
     }
-    parts.push(`Round ${latest.num}`);
-    if (red) parts.push(`${red} 🔴`);
-    if (orange) parts.push(`${orange} 🟠`);
-    if (yellow) parts.push(`${yellow} 🟡`);
-    if (resolved) parts.push(`${resolved} ✅`);
-    if (!open.length && !resolved) parts.push('无问题');
-    return parts.join(' · ');
+    line1.push(`Round ${latest.num}`);
+    if (latest.meta.files) line1.push(`${latest.meta.files} files`);
+    if (!total) line1.push('无问题');
+
+    // Line 2: severity breakdown + total + resolution rate
+    const line2 = [];
+    if (red) line2.push(`${red} 🔴`);
+    if (orange) line2.push(`${orange} 🟠`);
+    if (yellow) line2.push(`${yellow} 🟡`);
+    if (resolved) line2.push(`${resolved} ✅`);
+    if (total > 0) {
+      line2.push(`${total} total`);
+      if (resolved && resolved < total) line2.push(`${Math.round(resolved / total * 100)}% resolved`);
+    }
+
+    let result = line1.join(' · ');
+    if (line2.length) result += '<br>' + line2.join(' · ');
+
+    // Line 3+: per-round summaries (if multiple rounds)
+    if (rounds.length > 1) {
+      const sorted = [...rounds].sort((a, b) => b.num - a.num);
+      const summaries = sorted.map(r => {
+        const rOpen = Object.values(r.sections).flat().filter(f => !f.isResolved);
+        const rResolved = (r.sections.Resolved || []).length;
+        const parts = [`Round ${r.num}:`];
+        if (r.badgeClass) {
+          if (r.status === 'converged') parts.push('✅ 已收敛');
+          else if (r.status === 'analyzed') parts.push('📊 已分析');
+          else if (r.status === 'max-rounds') parts.push('⚠️ 达到上限');
+        }
+        const sev = [];
+        const sR = rOpen.filter(f => f.severity === '🔴').length;
+        const sO = rOpen.filter(f => f.severity === '🟠').length;
+        const sY = rOpen.filter(f => f.severity === '🟡').length;
+        if (sR) sev.push(`${sR}🔴`);
+        if (sO) sev.push(`${sO}🟠`);
+        if (sY) sev.push(`${sY}🟡`);
+        parts.push(sev.length ? sev.join(' ') : '0 open');
+        if (rResolved) parts.push(`${rResolved} resolved`);
+        return parts.join(' · ');
+      });
+      result += '<br>' + summaries.join('<br>');
+    }
+
+    return result;
   }
 
   function parseReviewReport(body) {
@@ -1413,6 +2134,12 @@
         currentInsight = null;
       }
       if (currentFinding) {
+        // Strip <details>/<summary>/</details> tags from details when insight was extracted
+        if (currentFinding.insight) {
+          currentFinding.details = currentFinding.details.filter(d =>
+            !/^<\/?details/.test(d) && !/^<summary>/.test(d)
+          );
+        }
         if (currentSection) currentSection.findings.push(currentFinding);
         currentFinding = null;
       }
@@ -1641,12 +2368,16 @@
     el.innerHTML = html;
     bindStatusToggles(el);
 
-    // Tag click -> scroll to finding
+    // Tag click -> open collapsed details + scroll to finding
     el.querySelectorAll('.review-nav-tag').forEach(tag => {
       tag.style.cursor = 'pointer';
       tag.addEventListener('click', () => {
         const target = el.querySelector(`#${CSS.escape(tag.dataset.target)}`);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!target) return;
+        // Open parent <details> if collapsed
+        const parentDetails = target.closest('details');
+        if (parentDetails && !parentDetails.open) parentDetails.open = true;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     });
   }
@@ -1656,17 +2387,28 @@
     const state = f.state || (f.isResolved ? 'resolved' : 'open');
     const stateClass = state === 'resolved' ? ' review-finding-resolved' : state === 'accepted' ? ' review-finding-accepted' : '';
     const stateBadge = state !== 'open' ? `<span class="finding-state-tag ${state}">${state === 'resolved' ? 'resolved' : 'accepted'}</span>` : '';
-    const wrapResolved = state !== 'open';
-    let html = `<div class="review-finding${stateClass}" id="${fId}" data-severity="${severityClass}" data-state="${state}" style="scroll-margin-top:120px">`;
-    if (wrapResolved) {
-      html += `<details class="review-resolved-details"><summary class="review-resolved-summary">【审查证据】[${state === 'resolved' ? 'RESOLVED' : 'ACCEPTED'}] ${esc(f.file)}:${esc(f.line)} — ${esc(f.title)}</summary>`;
+    const isCollapsible = state !== 'open';
+
+    // Header content (shared between summary and card)
+    const headerHtml = `<span class="review-finding-severity ${severityClass}">${esc(f.severity)}</span>`
+      + `<span class="review-finding-location">${esc(f.file)}:${esc(f.line)}</span>`
+      + stateBadge
+      + `<span class="review-finding-title">${esc(f.title)}</span>`;
+
+    let html = '';
+
+    // Collapsible wrapper for resolved/accepted
+    if (isCollapsible) {
+      html += `<details class="review-resolved-details">`;
+      html += `<summary class="review-resolved-summary">${headerHtml}</summary>`;
     }
-    html += '<div class="review-finding-header">';
-    html += `<span class="review-finding-severity ${severityClass}">${esc(f.severity)}</span>`;
-    html += `<span class="review-finding-location">${esc(f.file)}:${esc(f.line)}</span>`;
-    html += stateBadge;
-    html += `<span class="review-finding-title">${esc(f.title)}</span>`;
-    html += '</div>';
+
+    html += `<div class="review-finding${stateClass}" id="${fId}" data-severity="${severityClass}" data-state="${state}" style="scroll-margin-top:120px">`;
+
+    // Show header inside card only when not collapsible (open findings)
+    if (!isCollapsible) {
+      html += '<div class="review-finding-header">' + headerHtml + '</div>';
+    }
 
     if (f.details.length) {
       html += '<div class="review-finding-body">';
@@ -1694,10 +2436,12 @@
       }
     }
 
-    if (wrapResolved) {
+    html += '</div>';
+
+    if (isCollapsible) {
       html += `</details>`;
     }
-    html += '</div>';
+
     return html;
   }
 
@@ -1734,6 +2478,43 @@
         return `<div class="marker action"><span class="checkbox">☐</span> ${esc(title)}</div>`;
       }
     );
+
+    const html = md.render(processed, env);
+    return `<div data-source-file="${esc(sourceFile)}">${html}</div>`;
+  }
+
+  // Render markdown with id anchors on h2 headings (for findings nav)
+  function renderMdWithAnchors(body, sourceFile, h2Prefix) {
+    if (!md) return '<pre>' + esc(body) + '</pre>';
+    const env = { sourceFile };
+
+    let processed = body;
+    processed = processed.replace(
+      /^(#{2,3})\s+\[DECISION\]\s+(.+)$/gm,
+      (match, hashes, title) => {
+        const level = hashes.length;
+        return `</div><div class="marker decision">\n${'#'.repeat(level)} ${esc(title)}\n`;
+      }
+    );
+    processed = processed.replace(
+      /^(#{2,3})\s+\[OPEN\]\s+(.+)$/gm,
+      (match, hashes, title) => {
+        const level = hashes.length;
+        return `</div><div class="marker open">\n${'#'.repeat(level)} ${esc(title)}\n`;
+      }
+    );
+    processed = processed.replace(
+      /^-\s+\[ACTION\]\s+(.+)$/gm,
+      (match, title) => {
+        return `<div class="marker action"><span class="checkbox">☐</span> ${esc(title)}</div>`;
+      }
+    );
+
+    // Inject id anchors on ## headings before rendering
+    let h2Idx = 0;
+    processed = processed.replace(/^## (.+)$/gm, (match, title) => {
+      return `## <span id="${h2Prefix}${h2Idx++}"></span>${title}`;
+    });
 
     const html = md.render(processed, env);
     return `<div data-source-file="${esc(sourceFile)}">${html}</div>`;
