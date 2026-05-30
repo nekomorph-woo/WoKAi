@@ -13,7 +13,7 @@
       "name": "wok",
       "source": "./plugins/wok",
       "description": "需求到代码的完整管道：定义、设计、校验、计划、实现、审查、部署",
-      "version": "1.1.0"
+      "version": "1.1.1"
     },
     {
       "name": "wok-kit",

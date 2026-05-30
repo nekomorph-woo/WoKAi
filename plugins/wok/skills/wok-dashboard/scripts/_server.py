@@ -259,9 +259,9 @@ class SecureHandler(http.server.SimpleHTTPRequestHandler):
             return
         line = lines[idx]
         if checked:
-            lines[idx] = re.sub(r'^-\s+\[\s?\]', '- [x]', line, count=1)
+            lines[idx] = re.sub(r'^([-*]\s+)\[\s?\]', r'\1[x]', line, count=1)
         else:
-            lines[idx] = re.sub(r'^-\s+\[x\]', '- [ ]', line, count=1)
+            lines[idx] = re.sub(r'^([-*]\s+)\[x\]', r'\1[ ]', line, count=1)
         target.write_text('\n'.join(lines), encoding='utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')

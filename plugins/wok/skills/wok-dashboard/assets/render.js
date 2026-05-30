@@ -137,6 +137,7 @@
     // Recursively inject source attrs on ALL block-level tokens
     md.core.ruler.push('inject_source_attrs', (state) => {
       const sourceFile = state.env && state.env.sourceFile;
+      const bodyOffset = (state.env && state.env.bodyOffset) || 0;
       if (!sourceFile) return;
       function walk(tokens) {
         for (const token of tokens) {
@@ -145,7 +146,7 @@
                               token.type === 'code_block') && token.map;
           if (injectable) {
             token.attrSet('data-source-file', sourceFile);
-            token.attrSet('data-source-line', token.map[0]);
+            token.attrSet('data-source-line', token.map[0] + bodyOffset + 1);
           }
           if (token.children) walk(token.children);
         }
@@ -214,10 +215,17 @@
   // ── Parsing ──
   function parseMarkdown(text, fileName) {
     const frontmatter = extractFrontmatter(text);
-    const bodyOffset = frontmatter ? frontmatter.raw.split('\n').length : 0;
-    const body = frontmatter ? text.slice(frontmatter.raw.length).trim() : text;
+    let bodyOffset = 0;
+    let body = text;
+    if (frontmatter) {
+      const rawAfterFm = text.slice(frontmatter.raw.length);
+      const trimStart = rawAfterFm.trimStart();
+      const leadingWsLen = rawAfterFm.length - trimStart.length;
+      bodyOffset = text.slice(0, frontmatter.raw.length + leadingWsLen).split('\n').length - 1;
+      body = trimStart.trimEnd();
+    }
     const markers = extractMarkers(body).map(m => ({ ...m, line: m.line + bodyOffset, file: fileName }));
-    return { frontmatter: frontmatter ? frontmatter.data : null, body, markers, raw: text };
+    return { frontmatter: frontmatter ? frontmatter.data : null, body, markers, raw: text, bodyOffset };
   }
 
   function extractFrontmatter(text) {
@@ -1419,10 +1427,10 @@
       return;
     }
     html += renderFileStatusBar(defineKey);
-    if (defineKey) html += renderMd(state.parsed.get(defineKey).body, defineKey);
+    if (defineKey) html += renderMd(state.parsed.get(defineKey).body, defineKey, state.parsed.get(defineKey).bodyOffset);
     if (roadmapKey) {
       html += renderFileStatusBar(roadmapKey);
-      html += renderMd(state.parsed.get(roadmapKey).body, roadmapKey);
+      html += renderMd(state.parsed.get(roadmapKey).body, roadmapKey, state.parsed.get(roadmapKey).bodyOffset);
     }
     el.innerHTML = html;
     bindStatusToggles(el);
@@ -1707,7 +1715,7 @@
       return;
     }
     let html = renderFileStatusBar(issueKey);
-    html += renderMd(state.parsed.get(issueKey).body, issueKey);
+    html += renderMd(state.parsed.get(issueKey).body, issueKey, state.parsed.get(issueKey).bodyOffset);
     el.innerHTML = html;
     bindStatusToggles(el);
     bindAcceptanceCheckboxes(el);
@@ -1752,7 +1760,7 @@
     }
 
     // Render markdown with anchored h2s
-    html += renderMdWithAnchors(body, findingsKey, 'findings-h2-');
+    html += renderMdWithAnchors(body, findingsKey, 'findings-h2-', state.parsed.get(findingsKey).bodyOffset);
 
     if (headings.length > 0) {
       html += '</div></div>';
@@ -1813,11 +1821,12 @@
     html += '<div class="module-detail">';
     if (!state.activeModule) {
       html += renderFileStatusBar(registryKey);
-      html += renderMd(registry.body, registryKey);
+      html += renderMd(registry.body, registryKey, registry.bodyOffset);
     } else if (state.activeModule === '_shared') {
       for (const f of sharedFiles) {
+        const p = state.parsed.get(f);
         html += renderFileStatusBar(f);
-        html += renderMd(state.parsed.get(f).body, f);
+        html += renderMd(p.body, f, p.bodyOffset);
       }
     } else {
       const designKey = findFile(`modules/${state.activeModule}/design.md`);
@@ -1825,13 +1834,13 @@
       if (designKey) {
         html += '<div class="module-doc-section">';
         html += renderFileStatusBar(designKey);
-        html += renderMd(state.parsed.get(designKey).body, designKey);
+        html += renderMd(state.parsed.get(designKey).body, designKey, state.parsed.get(designKey).bodyOffset);
         html += '</div>';
       }
       if (decisionsKey) {
         html += '<div class="module-doc-section">';
         html += renderFileStatusBar(decisionsKey);
-        html += renderMd(state.parsed.get(decisionsKey).body, decisionsKey);
+        html += renderMd(state.parsed.get(decisionsKey).body, decisionsKey, state.parsed.get(decisionsKey).bodyOffset);
         html += '</div>';
       }
       if (!designKey && !decisionsKey) html = '<p style="color:#737373;">未找到该模块的设计文档</p>';
@@ -1915,7 +1924,8 @@
     html += '</div>';
     html += '<div class="check-content">';
     for (const block of blocks) {
-      const rendered = renderMd(block.text, checkKey);
+      const checkParsed = state.parsed.get(checkKey);
+      const rendered = renderMd(block.text, checkKey, checkParsed ? checkParsed.bodyOffset : 0);
       if (block.type === 'severity') {
         html += `<div class="severity-item" data-severity="${block.severity}">${rendered}</div>`;
       } else {
@@ -1988,7 +1998,7 @@
     html += '</div>';
 
     // Render markdown body
-    html += '<div class="plan-content">' + renderMd(plan.body, planKey) + '</div>';
+    html += '<div class="plan-content">' + renderMd(plan.body, planKey, plan.bodyOffset) + '</div>';
 
     el.innerHTML = html;
     bindStatusToggles(el);
@@ -2446,9 +2456,9 @@
   }
 
   // ── Markdown Rendering with semantic markers ──
-  function renderMd(body, sourceFile) {
+  function renderMd(body, sourceFile, bodyOffset) {
     if (!md) return '<pre>' + esc(body) + '</pre>';
-    const env = { sourceFile };
+    const env = { sourceFile, bodyOffset: bodyOffset || 0 };
 
     // Pre-process: wrap semantic markers in divs
     let processed = body;
@@ -2484,9 +2494,9 @@
   }
 
   // Render markdown with id anchors on h2 headings (for findings nav)
-  function renderMdWithAnchors(body, sourceFile, h2Prefix) {
+  function renderMdWithAnchors(body, sourceFile, h2Prefix, bodyOffset) {
     if (!md) return '<pre>' + esc(body) + '</pre>';
-    const env = { sourceFile };
+    const env = { sourceFile, bodyOffset: bodyOffset || 0 };
 
     let processed = body;
     processed = processed.replace(
